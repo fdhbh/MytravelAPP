@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>旅遊計畫 | 多人協作版</title>
+    <title>旅遊計畫 | 票券管理版</title>
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Tailwind CSS -->
@@ -12,10 +12,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Leaflet CSS & JS -->
+    <!-- Leaflet CSS & JS (雖然移除地圖視圖，但若要保留 LBS 推薦功能計算座標可能仍需部分邏輯，這裡先保留引用以免報錯，若完全移除地圖邏輯可刪除) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <!-- SortableJS (新增: 拖曳排序函式庫) -->
+    <!-- SortableJS (拖曳排序函式庫) -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <style>
@@ -48,18 +48,10 @@
         .sync-saved { color: #10b981; }
         .sync-error { color: #ef4444; }
 
-        /* AI Loading Animation */
-        .ai-sparkle {
-            animation: sparkle 1.5s infinite;
-        }
-        @keyframes sparkle {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
-        }
         /* 拖曳中的樣式 */
         .sortable-ghost { opacity: 0.4; background: #f0f9ff; border: 2px dashed #3b82f6; }
-        .drag-handle { touch-action: none; } /* 防止觸控捲動干擾拖曳 */
+        .drag-handle { touch-action: none; cursor: grab; } 
+        .drag-handle:active { cursor: grabbing; }
     </style>
 </head>
 <body class="text-slate-700 h-screen flex flex-col overflow-hidden">
@@ -86,21 +78,20 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <!-- 設定按鈕 -->
-                    <button @click="showSettingsModal = true" class="text-teal-100 hover:text-white hover:bg-teal-500/30 p-2 rounded-full transition">
-                        <i class="ph-bold ph-gear text-xl"></i>
-                    </button>
-
-                    <!-- 翻譯功能按鈕 -->
-                    <button @click="viewMode = 'translate'" 
-                            :class="viewMode === 'translate' ? 'bg-white text-teal-700 shadow-sm' : 'bg-teal-500/30 text-teal-200 hover:bg-teal-500/50'"
-                            class="p-2.5 rounded-xl transition-all h-11 w-11 flex items-center justify-center border border-teal-500/30">
-                        <i class="ph-bold ph-translate text-xl"></i>
+                    
+                    <!-- 票券功能按鈕 (取代翻譯) -->
+                    <button @click="viewMode = 'tickets'" 
+                            :class="viewMode === 'tickets' ? 'bg-white text-teal-700 shadow-sm' : 'bg-teal-500/30 text-teal-200 hover:bg-teal-500/50'"
+                            class="p-2.5 rounded-xl transition-all h-11 w-11 flex items-center justify-center border border-teal-500/30"
+                            title="票券夾">
+                        <i class="ph-bold ph-ticket text-xl"></i>
                     </button>
 
                     <div class="flex bg-teal-800/50 p-1 rounded-lg">
                         <button @click="viewMode = 'plan'" :class="viewMode === 'plan' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200'" class="p-2 rounded-md transition-all"><i class="ph-bold ph-calendar-check text-lg"></i></button>
-                        <button @click="viewMode = 'map'" :class="viewMode === 'map' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200'" class="p-2 rounded-md transition-all"><i class="ph-bold ph-map-trifold text-lg"></i></button>
+                        <!-- 移除地圖按鈕，改為翻譯或其他，這裡僅保留 Plan, Tickets(上面), Money, Translate -->
+                        <!-- 這裡我將 "翻譯" 移到下方群組，取代原本的地圖位置 -->
+                        <button @click="viewMode = 'translate'" :class="viewMode === 'translate' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200'" class="p-2 rounded-md transition-all"><i class="ph-bold ph-translate text-lg"></i></button>
                         <button @click="viewMode = 'money'" :class="viewMode === 'money' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200'" class="p-2 rounded-md transition-all"><i class="ph-bold ph-currency-dollar text-lg"></i></button>
                     </div>
                 </div>
@@ -143,7 +134,7 @@
                         </div>
                     </div>
 
-                    <!-- 航班卡片 (登機證樣式) -->
+                    <!-- 航班卡片 -->
                     <div class="mb-6">
                         <div v-if="currentDay.flight" class="relative bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl text-white shadow-lg overflow-hidden">
                             <div class="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-50 rounded-full z-10"></div>
@@ -188,16 +179,15 @@
                     </div>
 
                     <div class="relative pl-4 border-l-2 border-teal-100">
-                        <!-- 修改處: 新增一個專門用於排序的容器，與下方的按鈕分開 -->
-                        <div ref="itineraryList" class="space-y-8 pb-8">
-                            <!-- 修改處: key 改為 item.id 確保排序正確 -->
+                        <!-- 行程排序容器 -->
+                        <div ref="itineraryList" class="space-y-6 pb-8">
                             <div v-for="(item, idx) in currentDay.items" :key="item.id" class="relative group cursor-default">
                                 <div class="absolute -left-[21px] top-3 w-3 h-3 rounded-full border-2 border-white shadow-sm" :class="getDotColor(item.type)"></div>
                                 <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                                     <div class="flex flex-col gap-2">
                                         <div class="flex items-start gap-3">
-                                            <!-- 修改處: 加入拖曳手柄 (Drag Handle) -->
-                                            <div class="drag-handle cursor-move text-slate-300 hover:text-teal-500 self-center -ml-1 py-2 touch-none">
+                                            <!-- 拖曳手柄 -->
+                                            <div class="drag-handle cursor-grab text-slate-300 hover:text-teal-500 self-center -ml-1 py-2 touch-none">
                                                 <i class="ph-bold ph-dots-six-vertical text-xl"></i>
                                             </div>
 
@@ -228,30 +218,33 @@
                                                     <i class="ph-bold ph-info text-orange-400 text-xs mt-0.5"></i>
                                                     <textarea 
                                                         v-model="item.note" 
-                                                        class="auto-resize-textarea flex-1 text-xs text-orange-600/90 bg-transparent border-none p-0 focus:ring-0 pr-6 min-h-[20px] leading-relaxed overflow-hidden resize-none" 
+                                                        class="auto-resize-textarea flex-1 text-xs text-orange-600/90 bg-transparent border-none p-0 focus:ring-0 pr-2 min-h-[20px] leading-relaxed overflow-hidden resize-none" 
                                                         placeholder="備註" 
                                                         rows="1"
                                                         @input="adjustHeight($event.target)"
                                                     ></textarea>
-                                                    
-                                                    <button v-if="item.location" @click="askAiAboutPlace(item)" class="absolute right-0 top-0 text-purple-500 hover:text-purple-700 hover:scale-110 transition p-0.5" title="AI 介紹">
-                                                         <i v-if="loadingNoteIdx === idx" class="ph-bold ph-spinner animate-spin"></i>
-                                                         <i v-else class="ph-fill ph-magic-wand"></i>
-                                                    </button>
                                                 </div>
                                             </div>
                                             <!-- 右側操作按鈕區 -->
                                             <div class="flex flex-col gap-2 items-center">
                                                 <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1 rounded" title="Google Map"><i class="ph-bold ph-navigation-arrow"></i></a>
-                                                
-                                                <a v-if="isKoreaTrip" :href="getNaverMapLink(item.location)" target="_blank" class="text-green-500 hover:bg-green-50 p-1 rounded flex flex-col items-center justify-center border border-green-100 shadow-sm w-6 h-6" title="Naver Map">
-                                                    <span class="font-black text-[10px] leading-none">N</span>
-                                                </a>
-
                                                 <button @click="removeItem(idx)" class="text-red-300 hover:text-red-500 p-1 rounded"><i class="ph-bold ph-trash"></i></button>
                                             </div>
                                         </div>
                                         
+                                        <!-- QRCODE 連結區 (新功能) -->
+                                        <div class="mt-2 pt-2 border-t border-slate-100 flex items-center gap-2">
+                                            <div class="relative flex-1">
+                                                <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                                                    <i class="ph-bold ph-qr-code text-slate-400"></i>
+                                                </div>
+                                                <input v-model="item.qrcode" class="block w-full pl-8 pr-2 py-1 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500" placeholder="貼上票券 QR Code 連結...">
+                                            </div>
+                                            <a v-if="item.qrcode" :href="item.qrcode" target="_blank" class="shrink-0 bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-slate-700 flex items-center gap-1 shadow-sm">
+                                                <i class="ph-bold ph-link"></i> 開啟
+                                            </a>
+                                        </div>
+
                                         <!-- 智慧推薦區 -->
                                         <div v-if="item.type === 'food'" class="p-2 bg-orange-50 rounded-lg border border-orange-100/50 mt-1">
                                             <div class="flex items-center justify-between mb-1">
@@ -277,15 +270,10 @@
                             </div>
                         </div>
                         
-                        <!-- AI 自動排程 & 新增按鈕區 (移到 sortable 容器外) -->
+                        <!-- 新增按鈕區 (移除 AI 按鈕) -->
                         <div class="flex gap-2">
-                             <button @click="addItem" class="flex-1 flex items-center justify-center gap-2 text-teal-500 hover:text-teal-700 text-sm font-medium px-4 py-3 bg-white border border-dashed border-teal-300 rounded-xl hover:bg-teal-50 transition">
+                             <button @click="addItem" class="flex-1 flex items-center justify-center gap-2 text-teal-500 hover:text-teal-700 text-sm font-medium px-4 py-3 bg-white border border-dashed border-teal-300 rounded-xl hover:bg-teal-50 transition shadow-sm">
                                 <div class="w-2 h-2 bg-teal-300 rounded-full"></div><i class="ph-bold ph-plus"></i> 新增行程
-                            </button>
-                            
-                            <button @click="aiPlanDay" :disabled="isAiPlanning" class="flex-none flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-3 rounded-xl shadow-md hover:shadow-lg transition font-bold text-sm relative overflow-hidden group">
-                                <span v-if="isAiPlanning" class="flex items-center gap-1"><i class="ph-bold ph-spinner animate-spin"></i> 規劃中...</span>
-                                <span v-else class="flex items-center gap-1"><i class="ph-fill ph-sparkle ai-sparkle"></i> AI 自動規劃</span>
                             </button>
                         </div>
 
@@ -296,15 +284,54 @@
                 </div>
             </transition>
 
-            <!-- 地圖視圖 -->
-            <div v-if="viewMode === 'map'" class="h-full flex flex-col relative">
-                <div id="map" class="flex-1 w-full h-full bg-slate-200 z-0"></div>
-                <div v-if="isMapLoading" class="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex flex-col items-center justify-center text-teal-600"><i class="ph-duotone ph-spinner animate-spin text-4xl mb-2"></i><span class="text-xs font-bold">讀取中...</span></div>
-                <div class="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur rounded-xl p-3 shadow-lg border border-white/50 z-10 flex justify-between items-center">
-                    <div class="text-sm font-bold text-slate-800">📍 {{ currentDay.items.filter(i=>i.location).length }} 個地點</div>
-                    <div class="flex gap-2">
-                        <button @click="initMap" class="p-2 bg-teal-100 text-teal-600 rounded-lg"><i class="ph-bold ph-arrows-clockwise"></i></button>
-                        <button @click="centerOnUser" class="p-2 bg-blue-500 text-white rounded-lg shadow-md"><i class="ph-bold ph-crosshair"></i></button>
+            <!-- 票券視圖 (取代地圖) -->
+            <div v-if="viewMode === 'tickets'" class="p-4 pb-24 h-full flex flex-col">
+                <div class="mb-4 bg-gradient-to-r from-teal-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
+                    <h2 class="text-xl font-bold flex items-center gap-2"><i class="ph-bold ph-ticket"></i> 我的票券夾</h2>
+                    <p class="text-teal-100 text-xs mt-1">集中管理所有預約證明、門票 QR Code</p>
+                </div>
+                
+                <!-- 新增票券表單 -->
+                <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border border-slate-100">
+                    <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase">新增票券</h3>
+                    <div class="space-y-2">
+                        <div class="flex gap-2">
+                            <input v-model="newTicket.date" type="date" class="bg-slate-50 border-none rounded-lg text-sm px-3 py-2 w-1/3 text-slate-600">
+                            <input v-model="newTicket.name" placeholder="票券名稱 (例: 迪士尼門票)" class="bg-slate-50 border-none rounded-lg text-sm px-3 py-2 flex-1 min-w-0">
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                                    <i class="ph-bold ph-link text-slate-400"></i>
+                                </div>
+                                <input v-model="newTicket.link" placeholder="QR Code 圖片連結或網址..." class="w-full pl-8 pr-2 py-2 text-sm bg-slate-50 border-none rounded-lg">
+                            </div>
+                            <button @click="addTicket" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm whitespace-nowrap">新增</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 票券列表 -->
+                <div class="space-y-3 flex-1 overflow-y-auto hide-scroll pb-20">
+                    <div v-if="tickets.length === 0" class="text-center py-10 text-slate-300">
+                        <i class="ph-duotone ph-ticket text-4xl mb-2"></i>
+                        <p class="text-sm">還沒有票券，快點新增吧！</p>
+                    </div>
+                    <div v-for="(ticket, idx) in sortedTickets" :key="ticket.id" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden group">
+                        <div class="p-4 flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="bg-teal-50 text-teal-700 text-[10px] font-bold px-2 py-0.5 rounded border border-teal-100">{{ ticket.date || '無日期' }}</span>
+                                </div>
+                                <h3 class="text-lg font-bold text-slate-800">{{ ticket.name }}</h3>
+                                <a v-if="ticket.link" :href="ticket.link" target="_blank" class="text-xs text-blue-500 hover:underline mt-1 inline-block truncate max-w-[200px]"><i class="ph-bold ph-link"></i> {{ ticket.link }}</a>
+                            </div>
+                            <button @click="removeTicket(ticket.id)" class="text-slate-300 hover:text-red-500 p-2"><i class="ph-bold ph-trash"></i></button>
+                        </div>
+                        <a v-if="ticket.link" :href="ticket.link" target="_blank" class="block bg-slate-50 p-3 text-center text-slate-600 hover:bg-slate-100 border-t border-slate-100 transition">
+                            <i class="ph-bold ph-qr-code text-xl mb-1 block"></i>
+                            <span class="text-xs font-bold">開啟 QR Code</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -405,28 +432,6 @@
             </div>
         </main>
         
-        <!-- 設定視窗 (API Key) -->
-        <div v-if="showSettingsModal" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-fade-in" @click.self="showSettingsModal = false">
-            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
-                <button @click="showSettingsModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="ph-bold ph-x text-xl"></i></button>
-                <div class="text-center mb-6">
-                    <div class="w-14 h-14 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="ph-bold ph-gear text-2xl text-teal-600"></i></div>
-                    <h2 class="text-xl font-bold text-slate-800">App 設定</h2>
-                </div>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Gemini API Key</label>
-                        <input v-model="geminiApiKey" type="password" placeholder="貼上您的 API Key..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:ring-2 focus:ring-teal-500 font-mono text-sm">
-                        <p class="text-[10px] text-slate-400 mt-2 ml-1 leading-relaxed">
-                            AI 功能需要 Google Gemini API Key。<br>
-                            請至 <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-teal-500 underline">Google AI Studio</a> 免費申請。
-                        </p>
-                    </div>
-                    <button @click="showSettingsModal = false" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl shadow-lg mt-2">儲存設定</button>
-                </div>
-            </div>
-        </div>
-
         <!-- 初始設定視窗 -->
         <div v-if="showSetupModal" class="absolute inset-0 bg-teal-800/90 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-fade-in">
             <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
@@ -472,24 +477,20 @@
         // --- FIREBASE 設定區 (請填入你的設定) ---
         const firebaseConfig = {
             apiKey: "AIzaSyBHBeNkqkVoRl4E7FAcEPI-c2M-0ffSFPM",
-  authDomain: "mytravelapp-f9c1c.firebaseapp.com",
-  projectId: "mytravelapp-f9c1c",
-  storageBucket: "mytravelapp-f9c1c.firebasestorage.app",
-  messagingSenderId: "1024870317388",
-  appId: "1:1024870317388:web:772e1a90d888ab2107a3e9"
+            authDomain: "mytravelapp-f9c1c.firebaseapp.com",
+            projectId: "mytravelapp-f9c1c",
+            storageBucket: "mytravelapp-f9c1c.firebasestorage.app",
+            messagingSenderId: "1024870317388",
+            appId: "1:1024870317388:web:772e1a90d888ab2107a3e9"
         };
         // ------------------------------------
 
         // 初始化 Firebase
         let appInstance, db;
         try {
-            if (firebaseConfig.apiKey !== "你的_API_KEY") {
-                appInstance = initializeApp(firebaseConfig);
-                db = getFirestore(appInstance);
-                console.log("Firebase initialized");
-            } else {
-                console.warn("請先填寫 Firebase Config");
-            }
+            appInstance = initializeApp(firebaseConfig);
+            db = getFirestore(appInstance);
+            console.log("Firebase initialized");
         } catch(e) { console.error(e); }
 
         // 防抖動函數 (避免過於頻繁寫入資料庫)
@@ -507,13 +508,14 @@
                 const viewMode = ref('plan');
                 const currentDayIdx = ref(0);
                 const showSetupModal = ref(false);
-                const showSettingsModal = ref(false);
-                const geminiApiKey = ref('');
                 const itineraryList = ref(null); // 用於綁定拖曳容器
 
                 // 資料與狀態
                 const days = ref([]);
                 const expenses = ref([]);
+                const tickets = ref([]); // 新增: 票券資料
+                const newTicket = ref({ date: '', name: '', link: '' }); // 新增: 新票券輸入
+
                 const participants = ref(['我', '旅伴A']);
                 const participantsStr = ref('我, 旅伴A');
                 const exchangeRate = ref(0.215);
@@ -522,8 +524,6 @@
 
                 // 系統狀態
                 const isRateLoading = ref(false);
-                const isMapLoading = ref(false);
-                const userLocation = ref(null);
                 const weather = ref({ temp: null, icon: 'ph-sun', code: 0, location: '', daily: [] });
                 const setup = ref({ destination: 'Tokyo', startDate: new Date().toISOString().split('T')[0], days: 5, rate: 0.215, currency: 'JPY', langCode: 'ja', langName: '日文' });
                 
@@ -531,21 +531,26 @@
                 const syncStatus = ref(''); // '', '已儲存', '儲存中...', '連線錯誤'
                 let isRemoteUpdate = false; // 旗標：分辨是否為遠端更新
 
-                // 智慧推薦 & AI
+                // 智慧推薦
                 const recommendationsMap = reactive({});
                 const isSearchingRecs = ref(false);
                 const searchTargetIndex = ref('');
-                const isAiPlanning = ref(false);
-                const loadingNoteIdx = ref(null);
 
-                let mapInstance = null;
-                let userMarker = null;
-                let geoWatchId = null;
                 let sortableInstance = null;
 
                 // --- Computed ---
                 const currentDay = computed(() => days.value[currentDayIdx.value] || {items:[], flight:null, date:'', title:''});
                 const totalExpense = computed(() => expenses.value.reduce((sum, item) => sum + item.amount, 0));
+                
+                // 新增: 排序後的票券 (依日期)
+                const sortedTickets = computed(() => {
+                    return [...tickets.value].sort((a, b) => {
+                        if (!a.date) return 1;
+                        if (!b.date) return -1;
+                        return new Date(a.date) - new Date(b.date);
+                    });
+                });
+
                 const paidByPerson = computed(() => {
                     const map = {};
                     participants.value.forEach(p => map[p] = 0);
@@ -679,7 +684,7 @@
                     // 新增項目時給予一個唯一的 ID
                     currentDay.value.items.push({ 
                         id: Date.now() + Math.random(), 
-                        time: '', type: 'spot', activity: '', location: '', note: '' 
+                        time: '', type: 'spot', activity: '', location: '', note: '', qrcode: '' // 新增 qrcode 欄位
                     });
                 };
                 const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
@@ -691,6 +696,25 @@
                 const addExpense = () => { if(newExpense.value.item) { expenses.value.unshift({...newExpense.value}); newExpense.value.item=''; newExpense.value.amount=''; }};
                 const removeExpense = (idx) => expenses.value.splice(idx, 1);
                 
+                // 新增: 票券操作
+                const addTicket = () => {
+                    if (newTicket.value.name) {
+                        tickets.value.push({
+                            id: Date.now(),
+                            date: newTicket.value.date,
+                            name: newTicket.value.name,
+                            link: newTicket.value.link
+                        });
+                        newTicket.value = { date: '', name: '', link: '' };
+                    } else {
+                        alert('請輸入票券名稱');
+                    }
+                };
+                const removeTicket = (id) => {
+                    const idx = tickets.value.findIndex(t => t.id === id);
+                    if(idx !== -1 && confirm('確定刪除此票券?')) tickets.value.splice(idx, 1);
+                };
+
                 // --- Share ---
                 const copyShareLink = () => {
                     const url = window.location.href;
@@ -722,88 +746,6 @@
                     } catch (e) { console.error("推薦搜尋失敗", e); } finally { isSearchingRecs.value = false; searchTargetIndex.value = ''; }
                 };
                 const applyRecommendation = (item, rec) => { item.activity = rec.name; item.location = rec.name; };
-
-                // --- AI Functions ---
-                const callGeminiAPI = async (prompt) => {
-                    if (!geminiApiKey.value) {
-                        alert("請先點擊右上角設定齒輪，輸入您的 Gemini API Key 才能使用 AI 功能。");
-                        showSettingsModal.value = true;
-                        return null;
-                    }
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey.value}`;
-                    const payload = { contents: [{ parts: [{ text: prompt }] }] };
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        const data = await response.json();
-                        if (data.error) {
-                            console.error("API Error:", data.error);
-                            alert("API 連線錯誤: " + (data.error.message || "未知錯誤"));
-                            return null;
-                        }
-                        return data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    } catch (e) {
-                        console.error("Gemini API Error:", e);
-                        alert("連線失敗，請檢查網路或 API Key");
-                        return null;
-                    }
-                };
-
-                const aiPlanDay = async () => {
-                    if (!setup.value.destination) { alert('請先設定目的地'); return; }
-                    if (isAiPlanning.value) return;
-                    isAiPlanning.value = true;
-                    
-                    const prompt = `
-                    You are a helpful travel assistant. Please plan a one-day itinerary for Day ${currentDayIdx.value + 1} in ${setup.value.destination}.
-                    Return a JSON array of objects. Do not include markdown formatting (like \`\`\`json).
-                    Each object must have:
-                    - "time" (string, HH:MM format, start from morning)
-                    - "type" (string, one of: "spot", "food", "shop", "transport", "hotel")
-                    - "activity" (string, name of the activity or place)
-                    - "location" (string, specific place name for map search)
-                    - "note" (string, brief tip or description, max 20 words)
-                    
-                    Language: Traditional Chinese (Taiwan).
-                    Generate about 5-7 items.
-                    `;
-
-                    const result = await callGeminiAPI(prompt);
-                    if (result) {
-                        try {
-                            const jsonStr = result.replace(/```json/g, '').replace(/```/g, '').trim();
-                            const newItems = JSON.parse(jsonStr);
-                            if (Array.isArray(newItems)) {
-                                // AI 生成的項目也加上 ID
-                                const itemsWithId = newItems.map(i => ({ ...i, id: Date.now() + Math.random() }));
-                                currentDay.value.items.push(...itemsWithId);
-                            } else {
-                                alert("AI 格式解析失敗，請重試");
-                            }
-                        } catch (e) {
-                            console.error(e);
-                            alert("AI 回傳格式有誤，請稍後再試");
-                        }
-                    } 
-                    isAiPlanning.value = false;
-                };
-
-                const askAiAboutPlace = async (item) => {
-                    if (!item.location) return;
-                    const idx = currentDay.value.items.indexOf(item);
-                    loadingNoteIdx.value = idx;
-                    const prompt = `Briefly describe "${item.location}" in ${setup.value.destination} for a tourist. Language: Traditional Chinese (Taiwan). Max 30 words.`;
-                    const result = await callGeminiAPI(prompt);
-                    if (result) {
-                        item.note = result.trim();
-                        await nextTick();
-                        resizeAllTextareas(); 
-                    }
-                    loadingNoteIdx.value = null;
-                };
 
                 // --- Auto Detect ---
                 const countryInfoMap = { 'jp': {c:'JPY',l:'ja',n:'日文'}, 'kr': {c:'KRW',l:'ko',n:'韓文'}, 'us': {c:'USD',l:'en',n:'英文'}, 'cn': {c:'CNY',l:'zh-CN',n:'簡中'}, 'th': {c:'THB',l:'th',n:'泰文'} };
@@ -868,6 +810,7 @@
                             await setDoc(doc(db, "trips", newId), {
                                 days: newDays,
                                 expenses: [],
+                                tickets: [], // 初始化票券
                                 participantsStr: '我, 旅伴A',
                                 rate: setup.value.rate,
                                 config: setup.value,
@@ -886,6 +829,7 @@
                         await updateDoc(doc(db, "trips", tripId.value), {
                             days: days.value,
                             expenses: expenses.value,
+                            tickets: tickets.value, // 同步票券
                             participantsStr: participantsStr.value,
                             rate: exchangeRate.value,
                             config: setup.value,
@@ -900,10 +844,6 @@
                 }, 1000);
 
                 onMounted(async () => {
-                    const storedKey = localStorage.getItem('gemini_api_key');
-                    if (storedKey) geminiApiKey.value = storedKey;
-                    watch(geminiApiKey, (newVal) => { localStorage.setItem('gemini_api_key', newVal); });
-
                     const params = new URLSearchParams(window.location.search);
                     const tid = params.get('trip_id');
 
@@ -920,11 +860,14 @@
                                     if(day.items) {
                                         day.items.forEach(item => {
                                             if(!item.id) item.id = Date.now() + Math.random();
+                                            // 確保有 qrcode 欄位
+                                            if(item.qrcode === undefined) item.qrcode = '';
                                         });
                                     }
                                 });
 
                                 expenses.value = data.expenses || [];
+                                tickets.value = data.tickets || []; // 載入票券
                                 participantsStr.value = data.participantsStr || '我, 旅伴A';
                                 exchangeRate.value = data.rate || 0.215;
                                 setup.value = data.config || {};
@@ -947,49 +890,21 @@
                         });
                     } else { showSetupModal.value = true; }
 
-                    watch([days, expenses, exchangeRate, participantsStr], () => {
+                    watch([days, expenses, tickets, exchangeRate, participantsStr], () => {
                         if(!isRemoteUpdate && tripId.value) saveToCloud();
                     }, { deep: true });
                 });
-
-                const initMap = async () => { 
-                    isMapLoading.value = true; await nextTick(); if (!document.getElementById('map')) return;
-                    if (mapInstance) { mapInstance.remove(); mapInstance = null; }
-                    mapInstance = L.map('map').setView([35.6895, 139.6917], 13);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(mapInstance);
-                    if ("geolocation" in navigator) {
-                         if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId);
-                         geoWatchId = navigator.geolocation.watchPosition(pos => {
-                             userLocation.value = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                             const icon = L.divIcon({ className: 'custom-div-icon', html: "<div class='gps-pulse'></div>", iconSize: [14, 14] });
-                             if (userMarker) userMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
-                             else userMarker = L.marker([pos.coords.latitude, pos.coords.longitude], { icon: icon }).addTo(mapInstance);
-                         }, err => {}, { enableHighAccuracy: true });
-                    }
-                    const locs = currentDay.value.items.filter(i => i.location);
-                    const bounds = L.latLngBounds();
-                    for (const item of locs) {
-                        try { await new Promise(r => setTimeout(r, 500)); const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(item.location)}`); const d = await res.json(); if (d && d.length > 0) { const lat = parseFloat(d[0].lat); const lon = parseFloat(d[0].lon); L.marker([lat, lon]).addTo(mapInstance).bindPopup(`<b>${item.activity}</b><br>${item.location}`); bounds.extend([lat, lon]); } } catch (e) {}
-                    }
-                    isMapLoading.value = false; 
-                    if(locs.length > 0) mapInstance.fitBounds(bounds, { padding: [50, 50] });
-                };
-                const centerOnUser = () => { if(userLocation.value && mapInstance) mapInstance.flyTo([userLocation.value.lat, userLocation.value.lng], 15); };
-                watch(viewMode, (v) => { if(v === 'map') initMap(); });
-                watch(currentDayIdx, () => { if(viewMode.value === 'map') initMap(); });
 
                 return {
                     viewMode, currentDayIdx, days, currentDay, participants, participantsStr, updateParticipants,
                     getGoogleMapLink, addItem, removeItem, removeCurrentDay, addDay,
                     expenses, newExpense, totalExpense, addExpense, removeExpense,
+                    tickets, newTicket, addTicket, removeTicket, sortedTickets, // 票券相關
                     paidByPerson, settlementPlan, exchangeRate,
                     getTimePeriod, weather,
-                    isMapLoading, userLocation, initMap, centerOnUser,
-                    updateDate, showSetupModal, setup, initTrip, weatherDisplay, detectRate, isRateLoading, currencyLabel, currencySymbol, toggleFlightCard, getDotColor,
+                    isRateLoading, updateDate, showSetupModal, setup, initTrip, weatherDisplay, detectRate, currencyLabel, currencySymbol, toggleFlightCard, getDotColor,
                     searchNearby, recommendationsMap, isSearchingRecs, applyRecommendation, searchTargetIndex,
                     copyShareLink, syncStatus, syncStatusClass, syncStatusIcon, isKoreaTrip, getNaverMapLink, getDayName,
-                    aiPlanDay, isAiPlanning, askAiAboutPlace, loadingNoteIdx,
-                    showSettingsModal, geminiApiKey,
                     adjustHeight, itineraryList
                 };
             }
