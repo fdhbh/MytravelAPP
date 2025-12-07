@@ -79,21 +79,14 @@
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     
-                    <!-- 票券功能按鈕 (取代翻譯) -->
-                    <button @click="viewMode = 'tickets'" 
-                            :class="viewMode === 'tickets' ? 'bg-white text-teal-700 shadow-sm' : 'bg-teal-500/30 text-teal-200 hover:bg-teal-500/50'"
-                            class="p-2.5 rounded-xl transition-all h-11 w-11 flex items-center justify-center border border-teal-500/30"
-                            title="票券夾">
-                        <i class="ph-bold ph-ticket text-xl"></i>
-                    </button>
-
+                    <!-- 整合按鈕群組 -->
                     <div class="flex bg-teal-800/50 p-1 rounded-lg">
-                        <button @click="viewMode = 'plan'" :class="viewMode === 'plan' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200'" class="p-2 rounded-md transition-all"><i class="ph-bold ph-calendar-check text-lg"></i></button>
-                        <!-- 移除地圖按鈕，改為翻譯或其他，這裡僅保留 Plan, Tickets(上面), Money, Translate -->
-                        <!-- 這裡我將 "翻譯" 移到下方群組，取代原本的地圖位置 -->
-                        <button @click="viewMode = 'translate'" :class="viewMode === 'translate' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200'" class="p-2 rounded-md transition-all"><i class="ph-bold ph-translate text-lg"></i></button>
-                        <button @click="viewMode = 'money'" :class="viewMode === 'money' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200'" class="p-2 rounded-md transition-all"><i class="ph-bold ph-currency-dollar text-lg"></i></button>
+                        <button @click="viewMode = 'plan'" :class="viewMode === 'plan' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200 hover:text-white'" class="p-2 rounded-md transition-all" title="行程"><i class="ph-bold ph-calendar-check text-lg"></i></button>
+                        <button @click="viewMode = 'tickets'" :class="viewMode === 'tickets' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200 hover:text-white'" class="p-2 rounded-md transition-all" title="票券"><i class="ph-bold ph-ticket text-lg"></i></button>
+                        <button @click="viewMode = 'money'" :class="viewMode === 'money' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200 hover:text-white'" class="p-2 rounded-md transition-all" title="分帳"><i class="ph-bold ph-currency-dollar text-lg"></i></button>
+                        <button @click="viewMode = 'translate'" :class="viewMode === 'translate' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200 hover:text-white'" class="p-2 rounded-md transition-all" title="翻譯"><i class="ph-bold ph-translate text-lg"></i></button>
                     </div>
+
                 </div>
             </div>
             <div class="flex overflow-x-auto hide-scroll px-2 pb-3 space-x-3 snap-x">
