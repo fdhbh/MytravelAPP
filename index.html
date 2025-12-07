@@ -207,15 +207,19 @@
                                                     <i class="ph-fill ph-map-pin text-teal-400 text-xs"></i>
                                                     <input v-model="item.location" class="flex-1 text-xs text-slate-500 bg-transparent border-none p-0 focus:ring-0 truncate" placeholder="輸入地點 (例如: 新宿)">
                                                 </div>
-                                                <div class="flex items-start gap-1 mt-1 relative">
-                                                    <i class="ph-bold ph-info text-orange-400 text-xs mt-0.5"></i>
-                                                    <textarea 
-                                                        v-model="item.note" 
-                                                        class="auto-resize-textarea flex-1 text-xs text-orange-600/90 bg-transparent border-none p-0 focus:ring-0 pr-2 min-h-[20px] leading-relaxed overflow-hidden resize-none" 
-                                                        placeholder="備註" 
-                                                        rows="1"
-                                                        @input="adjustHeight($event.target)"
-                                                    ></textarea>
+                                                <!-- 修改後: 備註欄位加大並獨立區塊 -->
+                                                <div class="mt-2 relative">
+                                                    <div class="flex items-start gap-2 bg-slate-50 rounded-lg p-2 border border-slate-100 group-focus-within:border-teal-200 group-focus-within:bg-white transition-colors">
+                                                        <i class="ph-bold ph-notebook text-slate-400 text-sm mt-0.5 shrink-0"></i>
+                                                        <textarea 
+                                                            v-model="item.note" 
+                                                            class="auto-resize-textarea w-full text-xs text-slate-600 bg-transparent border-none p-0 focus:ring-0 leading-relaxed resize-none placeholder-slate-400 min-h-[20px]" 
+                                                            placeholder="添加備註、細節、預約號碼..." 
+                                                            rows="1"
+                                                            @input="adjustHeight($event.target)"
+                                                            @focus="adjustHeight($event.target)"
+                                                        ></textarea>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <!-- 右側操作按鈕區 -->
