@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>旅遊計畫 V3.2 | 雲端帳號版</title>
+    <title>旅遊計畫 V3.4 | 穩定修復版</title>
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Tailwind CSS -->
@@ -92,7 +92,7 @@
                         <h1 class="text-xl font-bold tracking-wide flex items-center gap-2 truncate">
                             {{ setup.destination || '旅遊計畫' }} <i class="ph-fill ph-airplane-tilt text-sm opacity-70"></i>
                         </h1>
-                        <!-- 權限顯示 (僅在有 Trip ID 時顯示) -->
+                        <!-- 權限顯示 -->
                         <div v-if="tripId" class="text-[10px] flex items-center gap-1 opacity-80" @click="togglePrivacy" :class="{'cursor-pointer hover:underline': isOwner}">
                             <i class="ph-fill" :class="isPublic ? 'ph-globe' : 'ph-lock-key'"></i>
                             {{ isPublic ? '公開 (連結可編輯)' : '私人 (僅擁有者)' }}
@@ -126,7 +126,8 @@
             </div>
             <div class="flex overflow-x-auto hide-scroll px-2 pb-3 space-x-3 snap-x">
                 <div v-for="(day, index) in days" :key="index" @click="currentDayIdx = index" class="snap-center shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl cursor-pointer transition-all border-2" :class="currentDayIdx === index ? 'bg-white text-teal-600 border-white shadow-lg scale-105' : 'bg-teal-500/50 text-teal-100 border-transparent hover:bg-teal-500'">
-                    <span class="text-[10px] font-bold opacity-90 mb-0.5">{{ day.shortDate }} ({{ getDayName(day.fullDate) }})</span>
+                    <!-- 修正: 確保即使資料為空也不會報錯 -->
+                    <span class="text-[10px] font-bold opacity-90 mb-0.5">{{ day.shortDate || '--/--' }} ({{ getDayName(day.fullDate) }})</span>
                     <span class="text-lg font-bold leading-none">D{{ index + 1 }}</span>
                 </div>
                 <button @click="addDay" class="shrink-0 w-12 h-16 rounded-xl flex items-center justify-center border-2 border-teal-400 border-dashed text-teal-200 hover:text-white hover:border-white transition"><i class="ph-bold ph-plus"></i></button>
@@ -149,7 +150,7 @@
                 <button v-else @click="createTripMode" class="text-teal-600 font-bold hover:underline mt-4">建立自己的新行程</button>
             </div>
 
-            <!-- 正常內容 (隱藏直到權限確認) -->
+            <!-- 正常內容 -->
             <div v-else class="h-full">
                 <!-- 行程表 (Plan View) -->
                 <transition name="fade" mode="out-in">
@@ -163,21 +164,15 @@
                             </div>
                             <div class="flex flex-col items-end pl-2">
                                 <div v-if="weatherDisplay" class="text-right">
-                                    <div class="flex items-center justify-end gap-1 text-indigo-600">
-                                        <i :class="['ph-duotone', weatherDisplay.icon, 'text-2xl']"></i>
-                                        <span class="text-xl font-bold font-mono whitespace-nowrap">{{ weatherDisplay.temp }}</span>
-                                    </div>
-                                    <div class="text-[10px] text-slate-400 flex items-center gap-1 justify-end mt-0.5">
-                                        <i :class="weatherDisplay.isForecast ? 'ph-bold ph-calendar' : 'ph-bold ph-map-pin'"></i>
-                                        {{ weatherDisplay.label }}
-                                    </div>
+                                    <div class="flex items-center justify-end gap-1 text-indigo-600"><i :class="['ph-duotone', weatherDisplay.icon, 'text-2xl']"></i><span class="text-xl font-bold font-mono">{{ weatherDisplay.temp }}</span></div>
+                                    <div class="text-[10px] text-slate-400 mt-0.5">{{ weatherDisplay.label }}</div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- 航班卡片 -->
                         <div class="mb-6">
-                            <div v-if="currentDay.flight" class="relative bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl text-white shadow-lg p-4">
+                            <div v-if="currentDay.flight && (currentDay.flight.number || currentDay.flight.startTime)" class="relative bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl text-white shadow-lg p-4">
                                 <button @click="toggleFlightCard" class="absolute top-2 right-2 hover:bg-white/20 rounded-full p-1"><i class="ph-bold ph-x"></i></button>
                                 <div class="flex justify-between items-center text-center">
                                     <div><div class="text-2xl font-mono font-black">{{ currentDay.flight.startTime }}</div><div class="text-xs opacity-70">{{ currentDay.flight.startAirport }}</div></div>
@@ -262,7 +257,7 @@
                 </div>
 
                 <!-- 通用票券列表 -->
-                <div v-if="additionalTickets.length > 0" class="mb-6">
+                <div v-if="additionalTickets && additionalTickets.length > 0" class="mb-6">
                     <div class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide ml-1">📁 通用票券 / 未排程</div>
                     <div class="space-y-3">
                         <div v-for="(ticket, idx) in additionalTickets" :key="ticket.id" class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex gap-3 relative group">
@@ -321,15 +316,15 @@
                     </div>
                 </div>
                 
-                <div v-if="additionalTickets.length === 0 && !hasAnyItineraryTickets" class="text-center py-10 text-slate-400">
+                <div v-if="(!additionalTickets || additionalTickets.length === 0) && !hasAnyItineraryTickets" class="text-center py-10 text-slate-400">
                     <i class="ph-duotone ph-ticket text-4xl mb-2"></i>
                     <p class="text-sm">尚無票券資料</p>
                     <p class="text-xs mt-1">請手動新增，或是將票券連結貼到行程中。</p>
                 </div>
             </div>
 
-            <!-- 分帳視圖 (Money View) -->
-            <div v-if="viewMode === 'money'" class="p-4 pb-24">
+            <!-- 分帳視圖 -->
+            <div v-if="viewMode === 'money'" class="p-4 pb-24 animate-fade-in">
                 <div class="bg-teal-600 text-white rounded-2xl p-6 shadow-lg mb-6 text-center relative">
                     <div class="absolute top-4 right-4 flex flex-col items-end">
                         <label class="text-[10px] text-teal-200 mb-1">匯率 ({{ currencyLabel }})</label>
@@ -385,7 +380,7 @@
             </div>
 
             <!-- 翻譯功能 -->
-            <div v-if="viewMode === 'translate'" class="p-6 h-full flex flex-col justify-center items-center pb-32">
+            <div v-if="viewMode === 'translate'" class="p-6 h-full flex flex-col justify-center items-center pb-32 animate-fade-in">
                 <div class="text-center mb-8">
                     <h2 class="text-2xl font-bold text-slate-800 mb-2">Google 翻譯捷徑</h2>
                     <p class="text-sm text-slate-400">請選擇您需要的翻譯模式</p>
@@ -519,12 +514,12 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         
         const firebaseConfig = {
-            apiKey: "AIzaSyBHBeNkqkVoRl4E7FAcEPI-c2M-0ffSFPM",
-  authDomain: "mytravelapp-f9c1c.firebaseapp.com",
-  projectId: "mytravelapp-f9c1c",
-  storageBucket: "mytravelapp-f9c1c.firebasestorage.app",
-  messagingSenderId: "1024870317388",
-  appId: "1:1024870317388:web:772e1a90d888ab2107a3e9"
+        apiKey: "AIzaSyBHBeNkqkVoRl4E7FAcEPI-c2M-0ffSFPM",
+        authDomain: "mytravelapp-f9c1c.firebaseapp.com",
+        projectId: "mytravelapp-f9c1c",
+        storageBucket: "mytravelapp-f9c1c.firebasestorage.app",
+        messagingSenderId: "1024870317388",
+        appId: "1:1024870317388:web:772e1a90d888ab2107a3e9"
         };
 
         let appInstance, db, auth;
@@ -547,7 +542,6 @@
 
         const app = createApp({
             setup() {
-                // States
                 const viewMode = ref('plan');
                 const currentDayIdx = ref(0);
                 const showSetupModal = ref(false);
@@ -556,7 +550,6 @@
                 const geminiApiKey = ref('');
                 const itineraryList = ref(null);
                 
-                // Auth States
                 const user = ref(null);
                 const cloudTrips = ref([]);
                 const isLoadingTrips = ref(false);
@@ -564,21 +557,19 @@
                 const isPublic = ref(true);
                 const tripOwnerId = ref(null);
 
-                // Trip Data States
                 const days = ref([]);
                 const expenses = ref([]);
                 const participants = ref(['我']);
                 const participantsStr = ref('我');
                 const exchangeRate = ref(0.215);
                 const newExpense = ref({ item: '', amount: '', payer: '我' });
-                const tripId = ref(null); // Cloud ID
-                const currentTripId = ref(null); // Local ID
-                const tripList = ref([]); // Local List
+                const tripId = ref(null); 
+                const currentTripId = ref(null);
+                const tripList = ref([]);
                 const additionalTickets = ref([]);
                 const newTicket = ref({ name: '', url: '', note: '' });
                 const setup = ref({ destination: 'Tokyo', startDate: new Date().toISOString().split('T')[0], days: 5, rate: 0.215, currency: 'JPY', langCode: 'ja' });
 
-                // UI Helpers
                 const isRateLoading = ref(false);
                 const isMapLoading = ref(false);
                 const userLocation = ref(null);
@@ -586,7 +577,6 @@
                 const syncStatus = ref('');
                 let isRemoteUpdate = false;
 
-                // AI & Recommendations
                 const recommendationsMap = reactive({});
                 const isSearchingRecs = ref(false);
                 const searchTargetIndex = ref('');
@@ -598,7 +588,22 @@
                 let geoWatchId = null;
                 let sortableInstance = null;
 
-                // --- 1. Helper Functions (Defined FIRST) ---
+                // --- 1. Helper Functions ---
+                const createDayObject = (dateStr) => {
+                    const d = new Date(dateStr);
+                    const mm = d.getMonth() + 1;
+                    const dd = d.getDate();
+                    const w = ['日','一','二','三','四','五','六'][d.getDay()];
+                    return {
+                        fullDate: dateStr,
+                        shortDate: `${mm < 10 ? '0'+mm : mm}/${dd < 10 ? '0'+dd : dd}`,
+                        date: `${mm < 10 ? '0'+mm : mm}/${dd < 10 ? '0'+dd : dd} (${w})`,
+                        title: '',
+                        items: [],
+                        flight: { startTime: '', startAirport: '', number: '', endTime: '', endAirport: '', arrivalOffset: 0 }
+                    };
+                };
+
                 const getTicketItems = (day) => {
                     if(!day || !day.items) return [];
                     return day.items.filter(item => {
@@ -619,7 +624,182 @@
                 const getTimePeriod = (t) => { if(!t) return '時間'; const h=parseInt(t.split(':')[0]); return h<5?'凌晨':h<11?'上午':h<14?'中午':h<18?'下午':'晚上'; };
                 const getDotColor = (t) => t==='food'?'bg-orange-400':t==='shop'?'bg-pink-400':t==='flight'?'bg-blue-500':t==='hotel'?'bg-indigo-500':'bg-teal-500';
 
-                // --- 2. AI Functions (Defined BEFORE return) ---
+                // --- 2. Computed ---
+                const isOwner = computed(() => user.value && tripOwnerId.value === user.value.uid);
+                const currentDay = computed(() => days.value[currentDayIdx.value] || createDayObject(new Date().toISOString().split('T')[0]));
+                const totalExpense = computed(() => expenses.value.reduce((sum, item) => sum + item.amount, 0));
+                
+                const paidByPerson = computed(() => {
+                    const map = {};
+                    participants.value.forEach(p => map[p] = 0);
+                    expenses.value.forEach(e => { if (map[e.payer] === undefined) map[e.payer] = 0; map[e.payer] += e.amount; });
+                    return map;
+                });
+                const settlementPlan = computed(() => {
+                    if (totalExpense.value === 0) return [];
+                    const average = totalExpense.value / participants.value.length;
+                    let balances = participants.value.map(p => ({ name: p, val: (paidByPerson.value[p] || 0) - average }));
+                    let debtors = balances.filter(b => b.val < -1).sort((a, b) => a.val - b.val);
+                    let creditors = balances.filter(b => b.val > 1).sort((a, b) => b.val - a.val);
+                    const result = [];
+                    let i = 0; let j = 0;
+                    while (i < debtors.length && j < creditors.length) {
+                        let debtor = debtors[i];
+                        let creditor = creditors[j];
+                        let amount = Math.min(Math.abs(debtor.val), creditor.val);
+                        amount = Math.round(amount);
+                        if (amount > 0) result.push({ from: debtor.name, to: creditor.name, amount: amount });
+                        debtor.val += amount; creditor.val -= amount;
+                        if (Math.abs(debtor.val) < 1) i++;
+                        if (creditor.val < 1) j++;
+                    }
+                    return result;
+                });
+
+                const currencyLabel = computed(() => setup.value.currency || '外幣');
+                const currencySymbol = computed(() => ({ 'JPY': '¥', 'USD': '$', 'KRW': '₩', 'TWD': 'NT$' }[setup.value.currency] || '$'));
+                const weatherDisplay = computed(() => ({ temp: weather.value.temp || '--', icon: weather.value.icon || 'ph-sun', label: weather.value.label || '天氣' }));
+                const isKoreaTrip = computed(() => setup.value.langCode === 'ko');
+                
+                const hasAnyItineraryTickets = computed(() => {
+                    if (!days.value) return false;
+                    return days.value.some(day => getTicketItems(day).length > 0);
+                });
+                
+                const hasTicketItems = (day) => getTicketItems(day).length > 0;
+
+                const syncStatusClass = computed(() => {
+                    if(tripId.value) return syncStatus.value === '已同步' ? 'sync-saved' : 'sync-saving';
+                    return 'sync-local';
+                });
+                const syncStatusIcon = computed(() => tripId.value ? 'ph-cloud-check' : 'ph-floppy-disk');
+
+                // --- 3. UI/Business Functions ---
+                const togglePrivacy = async () => {
+                    if (!isOwner.value || !tripId.value) return;
+                    isPublic.value = !isPublic.value;
+                    await updateDoc(doc(db, "trips", tripId.value), { isPublic: isPublic.value });
+                };
+
+                const createTripMode = () => {
+                    permissionDenied.value = false;
+                    tripId.value = null;
+                    showSetupModal.value = true;
+                };
+
+                const updateParticipants = () => { participants.value = participantsStr.value.split(',').map(s=>s.trim()).filter(s=>s); };
+                const updateDate = (e, day) => {
+                    const val = e.target.value; if(!val) return;
+                    // Re-create object to update formatted strings
+                    const newObj = createDayObject(val);
+                    day.fullDate = newObj.fullDate;
+                    day.shortDate = newObj.shortDate;
+                    day.date = newObj.date;
+                };
+                const addDay = () => {
+                    const lastDay = days.value[days.value.length - 1];
+                    const nextDate = new Date(lastDay.fullDate);
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    days.value.push(createDayObject(nextDate.toISOString().split('T')[0]));
+                };
+                const toggleFlightCard = () => {
+                     if (currentDay.value.flight) { if(confirm('移除航班?')) currentDay.value.flight = null; }
+                     else { currentDay.value.flight = { type: 'arrival', startTime: '10:00', startAirport: 'TPE', number: 'FLIGHT', endTime: '14:00', endAirport: 'DEST', arrivalOffset: 0 }; }
+                };
+                const addItem = () => {
+                    currentDay.value.items.push({ 
+                        id: Date.now() + Math.random(), 
+                        time: '', type: 'spot', activity: '', location: '', note: '', ticketUrl: '', showTicketInput: false 
+                    });
+                };
+                const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
+                const addExpense = () => { if(newExpense.value.item) { expenses.value.unshift({...newExpense.value}); newExpense.value.item=''; newExpense.value.amount=''; }};
+                const removeExpense = (idx) => expenses.value.splice(idx, 1);
+                const removeCurrentDay = () => { if(days.value.length>1 && confirm('刪除?')) days.value.splice(currentDayIdx.value, 1); };
+
+                const getGoogleMapLink = (loc) => loc ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}` : '#';
+                const getNaverMapLink = (loc) => loc ? `https://map.naver.com/p/search/${encodeURIComponent(loc)}` : '#';
+                
+                const detectRate = async () => {
+                    if(!setup.value.destination) return;
+                    isRateLoading.value = true;
+                    try {
+                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(setup.value.destination)}&limit=1&addressdetails=1`);
+                        const geoData = await geoRes.json();
+                        if(geoData?.[0]?.address?.country_code) {
+                            const info = countryInfoMap[geoData[0].address.country_code.toLowerCase()] || {c:'USD',l:'en',n:'英文'};
+                            setup.value.currency = info.c; setup.value.langCode = info.l; setup.value.langName = info.n;
+                            if(info.c === 'TWD') setup.value.rate = 1;
+                            else {
+                                const rRes = await fetch(`https://api.exchangerate-api.com/v4/latest/${info.c}`);
+                                const rData = await rRes.json();
+                                if(rData?.rates?.TWD) setup.value.rate = rData.rates.TWD;
+                            }
+                        }
+                    } catch(e) {} finally { isRateLoading.value = false; }
+                };
+
+                const fetchWeather = async (locName) => {
+                    try {
+                        weather.value.location = locName;
+                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locName)}&limit=1`);
+                        const geoData = await geoRes.json();
+                        if(geoData?.[0]) {
+                            const {lat, lon} = geoData[0];
+                            const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=16`);
+                            const wData = await wRes.json();
+                            weather.value.temp = Math.round(wData.current_weather.temperature);
+                            weather.value.icon = getWeatherIcon(wData.current_weather.weathercode);
+                            if(wData.daily) weather.value.daily = wData.daily;
+                        }
+                    } catch(e) { weather.value.temp = '--'; }
+                };
+
+                const copyShareLink = () => {
+                    if (!tripId.value) {
+                        alert("目前為本機模式，資料儲存在您的瀏覽器中。\n\n如需分享給朋友，請點擊「建立新旅程」並登入來產生雲端連結。");
+                        return;
+                    }
+                    const url = window.location.href;
+                    navigator.clipboard.writeText(url).then(() => alert('連結已複製！傳給朋友即可共同編輯。'));
+                };
+
+                const addManualTicket = () => { 
+                    if (newTicket.value.name) {
+                        additionalTickets.value.push({...newTicket.value, id: Date.now()}); 
+                        newTicket.value={name:'',url:'',note:''}; 
+                    } else { alert("請輸入票券名稱"); }
+                };
+                const removeManualTicket = (idx) => {
+                    if(confirm("確定刪除此票券?")) additionalTickets.value.splice(idx, 1);
+                };
+
+                const searchNearby = async (item, idx) => {
+                    if (!item.location || item.type !== 'food') return;
+                    const key = `${currentDayIdx.value}-${idx}`;
+                    searchTargetIndex.value = key;
+                    isSearchingRecs.value = true;
+                    recommendationsMap[key] = []; 
+                    try {
+                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(item.location)}&limit=1`);
+                        const geoData = await geoRes.json();
+                        if (geoData && geoData.length > 0) {
+                            const lat = geoData[0].lat;
+                            const lon = geoData[0].lon;
+                            const searchRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=restaurant near ${item.location}&limit=4`);
+                            const searchData = await searchRes.json();
+                            recommendationsMap[key] = searchData.map(place => ({
+                                name: place.name || place.display_name.split(',')[0], 
+                                location: place.name || place.display_name.split(',')[0],
+                                note: '推薦地點'
+                            }));
+                            if (recommendationsMap[key].length === 0) recommendationsMap[key] = [{ name: '附近無推薦', location: item.location, note: '' }];
+                        }
+                    } catch (e) { console.error("推薦搜尋失敗", e); } finally { isSearchingRecs.value = false; searchTargetIndex.value = ''; }
+                };
+                const applyRecommendation = (item, rec) => { item.activity = rec.name; item.location = rec.name; };
+
+                // --- 4. AI Functions ---
                 const callGeminiAPI = async (prompt) => {
                     if (!geminiApiKey.value) {
                         alert("請先點擊右上角設定齒輪，輸入您的 Gemini API Key 才能使用 AI 功能。");
@@ -707,153 +887,6 @@
                         resizeAllTextareas(); 
                     }
                     loadingNoteIdx.value = null;
-                };
-
-                // --- 3. Computed Properties ---
-                const isOwner = computed(() => user.value && tripOwnerId.value === user.value.uid);
-                const currentDay = computed(() => days.value[currentDayIdx.value] || { items: [], flight: null, date: '', title: '' });
-                const totalExpense = computed(() => expenses.value.reduce((sum, item) => sum + item.amount, 0));
-                
-                const paidByPerson = computed(() => {
-                    const map = {};
-                    participants.value.forEach(p => map[p] = 0);
-                    expenses.value.forEach(e => { if (map[e.payer] === undefined) map[e.payer] = 0; map[e.payer] += e.amount; });
-                    return map;
-                });
-                const settlementPlan = computed(() => {
-                    if (totalExpense.value === 0) return [];
-                    const average = totalExpense.value / participants.value.length;
-                    let balances = participants.value.map(p => ({ name: p, val: (paidByPerson.value[p] || 0) - average }));
-                    let debtors = balances.filter(b => b.val < -1).sort((a, b) => a.val - b.val);
-                    let creditors = balances.filter(b => b.val > 1).sort((a, b) => b.val - a.val);
-                    const result = [];
-                    let i = 0; let j = 0;
-                    while (i < debtors.length && j < creditors.length) {
-                        let debtor = debtors[i];
-                        let creditor = creditors[j];
-                        let amount = Math.min(Math.abs(debtor.val), creditor.val);
-                        amount = Math.round(amount);
-                        if (amount > 0) result.push({ from: debtor.name, to: creditor.name, amount: amount });
-                        debtor.val += amount; creditor.val -= amount;
-                        if (Math.abs(debtor.val) < 1) i++;
-                        if (creditor.val < 1) j++;
-                    }
-                    return result;
-                });
-
-                const currencyLabel = computed(() => setup.value.currency || '外幣');
-                const currencySymbol = computed(() => ({ 'JPY': '¥', 'USD': '$', 'KRW': '₩', 'TWD': 'NT$' }[setup.value.currency] || '$'));
-                const weatherDisplay = computed(() => ({ temp: weather.value.temp || '--', icon: weather.value.icon || 'ph-sun', label: weather.value.label || '天氣' }));
-                const isKoreaTrip = computed(() => setup.value.langCode === 'ko');
-                
-                const hasAnyItineraryTickets = computed(() => {
-                    if (!days.value) return false;
-                    return days.value.some(day => getTicketItems(day).length > 0);
-                });
-                
-                const hasTicketItems = (day) => getTicketItems(day).length > 0;
-
-                const syncStatusClass = computed(() => {
-                    if(tripId.value) return syncStatus.value === '已同步' ? 'sync-saved' : 'sync-saving';
-                    return 'sync-local';
-                });
-                const syncStatusIcon = computed(() => tripId.value ? 'ph-cloud-check' : 'ph-floppy-disk');
-
-                // --- 4. Other UI/Business Functions ---
-                const togglePrivacy = async () => {
-                    if (!isOwner.value || !tripId.value) return;
-                    isPublic.value = !isPublic.value;
-                    await updateDoc(doc(db, "trips", tripId.value), { isPublic: isPublic.value });
-                };
-
-                const createTripMode = () => {
-                    permissionDenied.value = false;
-                    tripId.value = null;
-                    showSetupModal.value = true;
-                };
-
-                const updateParticipants = () => { participants.value = participantsStr.value.split(',').map(s=>s.trim()).filter(s=>s); };
-                const updateDate = (e, day) => {
-                    const val = e.target.value; if(!val) return;
-                    day.fullDate = val;
-                    const d = new Date(val);
-                    if(isNaN(d.getTime())) return;
-                    const w = ['日','一','二','三','四','五','六'][d.getDay()];
-                    const mm = d.getMonth()+1; const dd = d.getDate();
-                    day.date = `${mm < 10 ? '0'+mm : mm}/${dd < 10 ? '0'+dd : dd} (${w})`;
-                    day.shortDate = `${mm}/${dd}`;
-                };
-                const addDay = () => days.value.push({ date: `Day ${days.value.length+1}`, title: '', items: [] });
-                const toggleFlightCard = () => {
-                     if (currentDay.value.flight) { if(confirm('移除航班?')) currentDay.value.flight = null; }
-                     else { currentDay.value.flight = { type: 'arrival', startTime: '10:00', startAirport: 'TPE', number: 'FLIGHT', endTime: '14:00', endAirport: 'DEST', arrivalOffset: 0 }; }
-                };
-                const addItem = () => {
-                    currentDay.value.items.push({ 
-                        id: Date.now() + Math.random(), 
-                        time: '', type: 'spot', activity: '', location: '', note: '', ticketUrl: '', showTicketInput: false 
-                    });
-                };
-                const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
-                const addExpense = () => { if(newExpense.value.item) { expenses.value.unshift({...newExpense.value}); newExpense.value.item=''; newExpense.value.amount=''; }};
-                const removeExpense = (idx) => expenses.value.splice(idx, 1);
-                const removeCurrentDay = () => { if(days.value.length>1 && confirm('刪除?')) days.value.splice(currentDayIdx.value, 1); };
-
-                const getGoogleMapLink = (loc) => loc ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}` : '#';
-                const getNaverMapLink = (loc) => loc ? `https://map.naver.com/p/search/${encodeURIComponent(loc)}` : '#';
-                
-                const detectRate = async () => {
-                    if(!setup.value.destination) return;
-                    isRateLoading.value = true;
-                    try {
-                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(setup.value.destination)}&limit=1&addressdetails=1`);
-                        const geoData = await geoRes.json();
-                        if(geoData?.[0]?.address?.country_code) {
-                            const info = countryInfoMap[geoData[0].address.country_code.toLowerCase()] || {c:'USD',l:'en',n:'英文'};
-                            setup.value.currency = info.c; setup.value.langCode = info.l; setup.value.langName = info.n;
-                            if(info.c === 'TWD') setup.value.rate = 1;
-                            else {
-                                const rRes = await fetch(`https://api.exchangerate-api.com/v4/latest/${info.c}`);
-                                const rData = await rRes.json();
-                                if(rData?.rates?.TWD) setup.value.rate = rData.rates.TWD;
-                            }
-                        }
-                    } catch(e) {} finally { isRateLoading.value = false; }
-                };
-
-                const fetchWeather = async (locName) => {
-                    try {
-                        weather.value.location = locName;
-                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locName)}&limit=1`);
-                        const geoData = await geoRes.json();
-                        if(geoData?.[0]) {
-                            const {lat, lon} = geoData[0];
-                            const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=16`);
-                            const wData = await wRes.json();
-                            weather.value.temp = Math.round(wData.current_weather.temperature);
-                            weather.value.icon = getWeatherIcon(wData.current_weather.weathercode);
-                            if(wData.daily) weather.value.daily = wData.daily;
-                        }
-                    } catch(e) { weather.value.temp = '--'; }
-                };
-
-                const copyShareLink = () => {
-                    if (!tripId.value) {
-                        alert("目前為本機模式，資料儲存在您的瀏覽器中。\n\n如需分享給朋友，請點擊「建立新旅程」並登入來產生雲端連結。");
-                        return;
-                    }
-                    const url = window.location.href;
-                    navigator.clipboard.writeText(url).then(() => alert('連結已複製！傳給朋友即可共同編輯。'));
-                };
-
-                const addManualTicket = () => { 
-                    if (newTicket.value.name) {
-                        additionalTickets.value.push({...newTicket.value, id: Date.now()}); 
-                        newTicket.value={name:'',url:'',note:''}; 
-                    } else { alert("請輸入票券名稱"); }
-                };
-                const removeManualTicket = (idx) => {
-                    if(confirm("確定刪除此票券?")) additionalTickets.value.splice(idx, 1);
                 };
 
                 // --- 5. Sortable & Resize ---
@@ -1014,6 +1047,23 @@
                             }
                             days.value = Array.isArray(rawDays) ? rawDays : [];
 
+                            // Fix incomplete data structure from old versions
+                            days.value.forEach(day => {
+                                if (!day.date || !day.shortDate || !day.fullDate) {
+                                    // Reconstruct missing date fields if only one exists
+                                    const baseDate = day.fullDate || day.date?.split(' ')[0] || new Date().toISOString().split('T')[0];
+                                    const newObj = createDayObject(baseDate);
+                                    day.fullDate = newObj.fullDate;
+                                    day.shortDate = newObj.shortDate;
+                                    day.date = newObj.date;
+                                }
+                                if(!day.items) day.items = [];
+                                day.items.forEach(item => {
+                                    if(!item.id) item.id = Date.now() + Math.random();
+                                    if(item.ticketUrl === undefined) item.ticketUrl = '';
+                                });
+                            });
+
                             expenses.value = data.expenses || [];
                             participantsStr.value = data.participantsStr || '';
                             exchangeRate.value = data.rate;
@@ -1088,7 +1138,7 @@
                     
                     const newDays = Array.from({length: setup.value.days}, (_, i) => {
                         const d = new Date(setup.value.startDate); d.setDate(d.getDate() + i);
-                        return { date: d.toISOString().split('T')[0], title: '', items: [] }; 
+                        return createDayObject(d.toISOString().split('T')[0]);
                     });
 
                     if (user.value && db) {
@@ -1200,17 +1250,7 @@
                                 expenses.value = data.expenses || [];
                                 participantsStr.value = data.participantsStr || '我, 旅伴A';
                                 exchangeRate.value = data.rate || 0.215;
-                                
-                                // Config fix
-                                const config = data.config || {};
-                                setup.value = {
-                                    destination: config.destination || '',
-                                    startDate: config.startDate || config.startdate || new Date().toISOString().split('T')[0],
-                                    days: config.days || 1,
-                                    rate: config.rate || 0.215,
-                                    currency: config.currency || 'JPY',
-                                    langCode: config.langCode || 'ja'
-                                };
+                                setup.value = data.config || {};
                                 additionalTickets.value = data.additionalTickets || [];
                                 tripOwnerId.value = data.ownerId;
                                 isPublic.value = data.isPublic !== false;
