@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>旅遊計畫 V3.4 | 穩定修復版</title>
+    <title>旅遊計畫 V3.5 | 穩定修復版</title>
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Tailwind CSS -->
@@ -126,7 +126,6 @@
             </div>
             <div class="flex overflow-x-auto hide-scroll px-2 pb-3 space-x-3 snap-x">
                 <div v-for="(day, index) in days" :key="index" @click="currentDayIdx = index" class="snap-center shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl cursor-pointer transition-all border-2" :class="currentDayIdx === index ? 'bg-white text-teal-600 border-white shadow-lg scale-105' : 'bg-teal-500/50 text-teal-100 border-transparent hover:bg-teal-500'">
-                    <!-- 修正: 確保即使資料為空也不會報錯 -->
                     <span class="text-[10px] font-bold opacity-90 mb-0.5">{{ day.shortDate || '--/--' }} ({{ getDayName(day.fullDate) }})</span>
                     <span class="text-lg font-bold leading-none">D{{ index + 1 }}</span>
                 </div>
@@ -153,8 +152,9 @@
             <!-- 正常內容 -->
             <div v-else class="h-full">
                 <!-- 行程表 (Plan View) -->
+                <!-- 修改: 移除 key 以修復切換日期空白問題 -->
                 <transition name="fade" mode="out-in">
-                    <div v-if="viewMode === 'plan'" :key="currentDayIdx" class="p-4 pb-24">
+                    <div v-if="viewMode === 'plan'" class="p-4 pb-24">
                         <!-- 頂部日期與天氣區 -->
                         <div class="bg-white p-4 rounded-2xl shadow-sm mb-4 border border-slate-100 flex justify-between items-start">
                             <div class="flex-1 relative pt-0.5">
@@ -426,6 +426,8 @@
                         <h2 class="text-xl font-bold text-slate-800">選單</h2>
                         <button @click="showTripMenu = false" class="text-slate-400"><i class="ph-bold ph-x text-xl"></i></button>
                     </div>
+
+                    <!-- User Profile Area -->
                     <div v-if="user" class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 flex items-center gap-3">
                         <img :src="user.photoURL" class="w-10 h-10 rounded-full border border-white shadow-sm">
                         <div class="flex-1 min-w-0">
@@ -542,6 +544,7 @@
 
         const app = createApp({
             setup() {
+                // States
                 const viewMode = ref('plan');
                 const currentDayIdx = ref(0);
                 const showSetupModal = ref(false);
@@ -550,6 +553,7 @@
                 const geminiApiKey = ref('');
                 const itineraryList = ref(null);
                 
+                // Auth States
                 const user = ref(null);
                 const cloudTrips = ref([]);
                 const isLoadingTrips = ref(false);
@@ -557,19 +561,21 @@
                 const isPublic = ref(true);
                 const tripOwnerId = ref(null);
 
+                // Trip Data States
                 const days = ref([]);
                 const expenses = ref([]);
                 const participants = ref(['我']);
                 const participantsStr = ref('我');
                 const exchangeRate = ref(0.215);
                 const newExpense = ref({ item: '', amount: '', payer: '我' });
-                const tripId = ref(null); 
-                const currentTripId = ref(null);
-                const tripList = ref([]);
+                const tripId = ref(null); // Cloud ID
+                const currentTripId = ref(null); // Local ID
+                const tripList = ref([]); // Local List
                 const additionalTickets = ref([]);
                 const newTicket = ref({ name: '', url: '', note: '' });
                 const setup = ref({ destination: 'Tokyo', startDate: new Date().toISOString().split('T')[0], days: 5, rate: 0.215, currency: 'JPY', langCode: 'ja' });
 
+                // UI Helpers
                 const isRateLoading = ref(false);
                 const isMapLoading = ref(false);
                 const userLocation = ref(null);
@@ -577,6 +583,7 @@
                 const syncStatus = ref('');
                 let isRemoteUpdate = false;
 
+                // AI & Recommendations
                 const recommendationsMap = reactive({});
                 const isSearchingRecs = ref(false);
                 const searchTargetIndex = ref('');
@@ -591,6 +598,7 @@
                 // --- 1. Helper Functions ---
                 const createDayObject = (dateStr) => {
                     const d = new Date(dateStr);
+                    if(isNaN(d.getTime())) return { fullDate: dateStr, shortDate: '--/--', date: 'Day', title: '', items: [], flight: {} };
                     const mm = d.getMonth() + 1;
                     const dd = d.getDate();
                     const w = ['日','一','二','三','四','五','六'][d.getDay()];
@@ -614,7 +622,9 @@
                 const getDayName = (dateStr) => {
                     if (!dateStr) return '';
                     const parts = dateStr.split('-');
+                    if (parts.length < 3) return '';
                     const d = new Date(parts[0], parts[1] - 1, parts[2]); 
+                    if(isNaN(d.getTime())) return '';
                     const map = ['日','一','二','三','四','五','六'];
                     return map[d.getDay()] || '';
                 }
@@ -626,7 +636,17 @@
 
                 // --- 2. Computed ---
                 const isOwner = computed(() => user.value && tripOwnerId.value === user.value.uid);
-                const currentDay = computed(() => days.value[currentDayIdx.value] || createDayObject(new Date().toISOString().split('T')[0]));
+                const currentDay = computed(() => {
+                    // Safe access with fallback
+                    if (!days.value || days.value.length === 0) return createDayObject(new Date().toISOString().split('T')[0]);
+                    const day = days.value[currentDayIdx.value];
+                    if (!day) return createDayObject(new Date().toISOString().split('T')[0]);
+                    
+                    // Ensure structure exists
+                    if (!day.items) day.items = [];
+                    if (!day.flight) day.flight = {};
+                    return day;
+                });
                 const totalExpense = computed(() => expenses.value.reduce((sum, item) => sum + item.amount, 0));
                 
                 const paidByPerson = computed(() => {
@@ -690,7 +710,6 @@
                 const updateParticipants = () => { participants.value = participantsStr.value.split(',').map(s=>s.trim()).filter(s=>s); };
                 const updateDate = (e, day) => {
                     const val = e.target.value; if(!val) return;
-                    // Re-create object to update formatted strings
                     const newObj = createDayObject(val);
                     day.fullDate = newObj.fullDate;
                     day.shortDate = newObj.shortDate;
@@ -703,10 +722,15 @@
                     days.value.push(createDayObject(nextDate.toISOString().split('T')[0]));
                 };
                 const toggleFlightCard = () => {
-                     if (currentDay.value.flight) { if(confirm('移除航班?')) currentDay.value.flight = null; }
-                     else { currentDay.value.flight = { type: 'arrival', startTime: '10:00', startAirport: 'TPE', number: 'FLIGHT', endTime: '14:00', endAirport: 'DEST', arrivalOffset: 0 }; }
+                     if (currentDay.value.flight && (currentDay.value.flight.number || currentDay.value.flight.startTime)) { 
+                         if(confirm('移除航班?')) currentDay.value.flight = {}; 
+                     } else { 
+                         currentDay.value.flight = { type: 'arrival', startTime: '10:00', startAirport: 'TPE', number: 'FLIGHT', endTime: '14:00', endAirport: 'DEST', arrivalOffset: 0 }; 
+                     }
                 };
                 const addItem = () => {
+                    // Safe add
+                    if (!currentDay.value.items) currentDay.value.items = [];
                     currentDay.value.items.push({ 
                         id: Date.now() + Math.random(), 
                         time: '', type: 'spot', activity: '', location: '', note: '', ticketUrl: '', showTicketInput: false 
@@ -766,6 +790,7 @@
 
                 const addManualTicket = () => { 
                     if (newTicket.value.name) {
+                        if (!additionalTickets.value) additionalTickets.value = [];
                         additionalTickets.value.push({...newTicket.value, id: Date.now()}); 
                         newTicket.value={name:'',url:'',note:''}; 
                     } else { alert("請輸入票券名稱"); }
@@ -857,6 +882,7 @@
                             const newItems = JSON.parse(jsonStr);
                             if (Array.isArray(newItems)) {
                                 const itemsWithId = newItems.map(i => ({ ...i, id: Date.now() + Math.random(), ticketUrl: '' }));
+                                if (!currentDay.value.items) currentDay.value.items = [];
                                 currentDay.value.items.push(...itemsWithId);
                             } else {
                                 alert("AI 格式解析失敗，請重試");
