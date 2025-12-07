@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>旅遊計畫 | 票券管理版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>旅遊計畫 | 票券版v2.2</title>
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Tailwind CSS -->
@@ -12,59 +12,75 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Leaflet CSS & JS (雖然移除地圖視圖，但若要保留 LBS 推薦功能計算座標可能仍需部分邏輯，這裡先保留引用以免報錯，若完全移除地圖邏輯可刪除) -->
+    <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <!-- SortableJS (拖曳排序函式庫) -->
+    <!-- SortableJS -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <style>
-        body { font-family: 'Noto Sans TC', 'Noto Sans JP', sans-serif; background-color: #F3F4F6; }
+        /* [修正] 強制鎖定 Body，防止 iOS 鍵盤彈出時推動整個頁面 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            position: fixed; /* 關鍵: 固定定位防止整體滾動 */
+            overflow: hidden;
+            font-family: 'Noto Sans TC', 'Noto Sans JP', sans-serif;
+            background-color: #F3F4F6;
+            overscroll-behavior-y: none; /* 防止橡皮筋效果 */
+        }
+
+        /* 隱藏滾動條 */
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 動畫 */
         .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
-        #map-container { z-index: 1; }
-        .gps-pulse {
-            width: 14px; height: 14px; border: 2px solid #fff; border-radius: 50%;
-            background-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
-            animation: pulse-blue 2s infinite;
-        }
-        @keyframes pulse-blue {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-        }
-        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; }
-        .leaflet-popup-content { margin: 0; width: 200px !important; }
         @keyframes fade-in-up {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-in { animation: fade-in-up 0.4s ease-out forwards; }
+        
         /* 狀態指示燈 */
         .sync-status { position: fixed; bottom: 20px; right: 20px; z-index: 9999; font-size: 12px; padding: 6px 12px; border-radius: 20px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; items-center; gap: 6px; font-weight: bold; transition: all 0.3s; }
         .sync-saving { color: #f59e0b; }
         .sync-saved { color: #10b981; }
         .sync-error { color: #ef4444; }
 
-        /* 拖曳中的樣式 */
+        /* 拖曳樣式 */
         .sortable-ghost { opacity: 0.4; background: #f0f9ff; border: 2px dashed #3b82f6; }
         .drag-handle { touch-action: none; cursor: grab; } 
         .drag-handle:active { cursor: grabbing; }
+
+        /* [修正] #app 容器設定 */
+        #app {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 100dvh; /* 使用動態視窗高度 */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* 確保只有內部 main 區域滾動 */
+        }
     </style>
 </head>
-<body class="text-slate-700 h-screen flex flex-col overflow-hidden">
+<body class="text-slate-700">
 
-    <div id="app" class="flex flex-col h-full max-w-md mx-auto w-full bg-white shadow-2xl relative sm:rounded-xl sm:my-4 sm:h-[95vh] sm:border-4 sm:border-slate-100">
+    <div id="app" class="max-w-md mx-auto w-full bg-white shadow-2xl relative sm:rounded-xl sm:my-4 sm:h-[95vh] sm:border-4 sm:border-slate-100 sm:relative sm:top-auto sm:left-auto sm:right-auto sm:bottom-auto">
 
         <!-- 狀態指示燈 -->
         <div v-if="syncStatus" class="sync-status" :class="syncStatusClass">
             <i class="ph-bold" :class="syncStatusIcon"></i> {{ syncStatus }}
         </div>
 
-        <!-- Header -->
-        <header class="bg-teal-600 text-white shrink-0 z-20 shadow-md">
+        <!-- Header (固定在頂部，不隨內容滾動) -->
+        <header class="bg-teal-600 text-white shrink-0 z-20 shadow-md relative">
             <div class="p-4 flex justify-between items-center">
                 <div class="flex items-center gap-3">
                     <!-- 分享按鈕 -->
@@ -78,7 +94,6 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    
                     <!-- 整合按鈕群組 -->
                     <div class="flex bg-teal-800/50 p-1 rounded-lg">
                         <button @click="viewMode = 'plan'" :class="viewMode === 'plan' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200 hover:text-white'" class="p-2 rounded-md transition-all" title="行程"><i class="ph-bold ph-calendar-check text-lg"></i></button>
@@ -86,7 +101,6 @@
                         <button @click="viewMode = 'money'" :class="viewMode === 'money' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200 hover:text-white'" class="p-2 rounded-md transition-all" title="分帳"><i class="ph-bold ph-currency-dollar text-lg"></i></button>
                         <button @click="viewMode = 'translate'" :class="viewMode === 'translate' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200 hover:text-white'" class="p-2 rounded-md transition-all" title="翻譯"><i class="ph-bold ph-translate text-lg"></i></button>
                     </div>
-
                 </div>
             </div>
             <div class="flex overflow-x-auto hide-scroll px-2 pb-3 space-x-3 snap-x">
@@ -98,21 +112,19 @@
             </div>
         </header>
 
-        <!-- Main Content -->
-        <main class="flex-1 overflow-y-auto bg-slate-50 relative hide-scroll">
+        <!-- Main Content (唯一可滾動區域) -->
+        <main class="flex-1 overflow-y-auto bg-slate-50 relative hide-scroll overscroll-none pb-safe">
             
             <!-- 行程表 (Plan View) -->
             <transition name="fade" mode="out-in">
                 <div v-if="viewMode === 'plan'" :key="currentDayIdx" class="p-4 pb-24">
-                    <div class="bg-white p-4 rounded-2xl shadow-sm mb-4 border border-slate-100 flex justify-between items-start">
+                    <!-- 日期標題卡 -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm mb-4 border border-slate-100 flex justify-between items-start sticky top-0 z-10">
                         <div class="flex-1 relative pt-0.5">
-                            <!-- 隱形日期選擇器 -->
                             <input type="date" :value="currentDay.fullDate" @change="updateDate($event, currentDay)" class="absolute top-0 left-0 w-40 h-8 opacity-0 z-20 cursor-pointer">
-                            <!-- 日期顯示 -->
                             <input v-model="currentDay.date" class="text-xl font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0 w-full relative z-10 pointer-events-none" placeholder="Day 1 (點擊設定)">
                             <input v-model="currentDay.title" class="text-sm text-slate-500 bg-transparent border-b border-dashed border-slate-300 focus:border-teal-500 focus:outline-none w-full mt-1" placeholder="輸入當日主題">
                         </div>
-                        <!-- 天氣顯示 -->
                         <div class="flex flex-col items-end pl-2">
                             <div v-if="weatherDisplay" class="text-right">
                                 <div class="flex items-center justify-end gap-1 text-indigo-600">
@@ -172,19 +184,15 @@
                     </div>
 
                     <div class="relative pl-4 border-l-2 border-teal-100">
-                        <!-- 行程排序容器 -->
                         <div ref="itineraryList" class="space-y-6 pb-8">
                             <div v-for="(item, idx) in currentDay.items" :key="item.id" class="relative group cursor-default">
                                 <div class="absolute -left-[21px] top-3 w-3 h-3 rounded-full border-2 border-white shadow-sm" :class="getDotColor(item.type)"></div>
                                 <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                                     <div class="flex flex-col gap-2">
                                         <div class="flex items-start gap-3">
-                                            <!-- 拖曳手柄 -->
                                             <div class="drag-handle cursor-grab text-slate-300 hover:text-teal-500 self-center -ml-1 py-2 touch-none">
                                                 <i class="ph-bold ph-dots-six-vertical text-xl"></i>
                                             </div>
-
-                                            <!-- 時間輸入塊 -->
                                             <div class="flex flex-col items-center w-20 shrink-0 gap-2">
                                                 <div class="relative flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-1 w-full h-16 cursor-pointer hover:bg-teal-50 hover:border-teal-200 transition group/time">
                                                     <span class="text-[10px] font-medium text-slate-400 group-hover/time:text-teal-400">{{ getTimePeriod(item.time) }}</span>
@@ -200,14 +208,13 @@
                                                     <option value="hotel">🏨 住宿</option>
                                                 </select>
                                             </div>
-                                            <!-- 內容輸入 -->
                                             <div class="flex-1 min-w-0 pt-1">
                                                 <input v-model="item.activity" class="block w-full font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0" placeholder="行程名稱...">
                                                 <div class="flex items-center gap-1 mt-1">
                                                     <i class="ph-fill ph-map-pin text-teal-400 text-xs"></i>
                                                     <input v-model="item.location" class="flex-1 text-xs text-slate-500 bg-transparent border-none p-0 focus:ring-0 truncate" placeholder="輸入地點 (例如: 新宿)">
                                                 </div>
-                                                <!-- 修改後: 備註欄位加大並獨立區塊 -->
+                                                <!-- 備註區塊 (已優化樣式) -->
                                                 <div class="mt-2 relative">
                                                     <div class="flex items-start gap-2 bg-slate-50 rounded-lg p-2 border border-slate-100 group-focus-within:border-teal-200 group-focus-within:bg-white transition-colors">
                                                         <i class="ph-bold ph-notebook text-slate-400 text-sm mt-0.5 shrink-0"></i>
@@ -222,14 +229,13 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <!-- 右側操作按鈕區 -->
                                             <div class="flex flex-col gap-2 items-center">
                                                 <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1 rounded" title="Google Map"><i class="ph-bold ph-navigation-arrow"></i></a>
                                                 <button @click="removeItem(idx)" class="text-red-300 hover:text-red-500 p-1 rounded"><i class="ph-bold ph-trash"></i></button>
                                             </div>
                                         </div>
                                         
-                                        <!-- QRCODE 連結區 (新功能) -->
+                                        <!-- QRCODE 連結 -->
                                         <div class="mt-2 pt-2 border-t border-slate-100 flex items-center gap-2">
                                             <div class="relative flex-1">
                                                 <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
@@ -254,20 +260,17 @@
                                                     搜尋
                                                 </button>
                                             </div>
-                                            
                                             <div v-if="recommendationsMap[`${currentDayIdx}-${idx}`] && recommendationsMap[`${currentDayIdx}-${idx}`].length > 0" class="flex flex-wrap gap-2 mt-1">
                                                 <button v-for="rec in recommendationsMap[`${currentDayIdx}-${idx}`]" :key="rec.name" @click="applyRecommendation(item, rec)" class="text-[10px] px-2 py-1.5 bg-white border border-orange-200 rounded-lg text-slate-600 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition shadow-sm flex flex-col items-start gap-0.5 max-w-[120px] truncate">
                                                     <span class="font-bold truncate w-full text-left">{{ rec.name }}</span>
                                                 </button>
                                             </div>
-                                            <div v-else-if="!item.location" class="text-[9px] text-slate-400 italic">請先輸入地點 (例如: 澀谷)，再點擊搜尋</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- 新增按鈕區 (移除 AI 按鈕) -->
                         <div class="flex gap-2">
                              <button @click="addItem" class="flex-1 flex items-center justify-center gap-2 text-teal-500 hover:text-teal-700 text-sm font-medium px-4 py-3 bg-white border border-dashed border-teal-300 rounded-xl hover:bg-teal-50 transition shadow-sm">
                                 <div class="w-2 h-2 bg-teal-300 rounded-full"></div><i class="ph-bold ph-plus"></i> 新增行程
@@ -281,14 +284,13 @@
                 </div>
             </transition>
 
-            <!-- 票券視圖 (取代地圖) -->
+            <!-- 票券視圖 -->
             <div v-if="viewMode === 'tickets'" class="p-4 pb-24 h-full flex flex-col">
                 <div class="mb-4 bg-gradient-to-r from-teal-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
                     <h2 class="text-xl font-bold flex items-center gap-2"><i class="ph-bold ph-ticket"></i> 我的票券夾</h2>
                     <p class="text-teal-100 text-xs mt-1">集中管理所有預約證明、門票 QR Code</p>
                 </div>
                 
-                <!-- 新增票券表單 -->
                 <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border border-slate-100">
                     <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase">新增票券</h3>
                     <div class="space-y-2">
@@ -308,7 +310,6 @@
                     </div>
                 </div>
 
-                <!-- 票券列表 -->
                 <div class="space-y-3 flex-1 overflow-y-auto hide-scroll pb-20">
                     <div v-if="tickets.length === 0" class="text-center py-10 text-slate-300">
                         <i class="ph-duotone ph-ticket text-4xl mb-2"></i>
@@ -344,7 +345,6 @@
                     <div class="text-4xl font-bold font-mono">{{ currencySymbol }} {{ totalExpense.toLocaleString() }}</div>
                     <div class="text-lg font-bold text-teal-200 mt-1">≈ NT$ {{ Math.round(totalExpense * exchangeRate).toLocaleString() }}</div>
                 </div>
-                <!-- 成員設定 -->
                 <div class="mb-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                     <div class="text-xs font-bold text-slate-400 mb-2">分帳成員 (用逗號分隔)</div>
                     <input v-model="participantsStr" @change="updateParticipants" class="w-full text-sm bg-slate-50 rounded px-2 py-1 border border-slate-200" placeholder="例如: 我, 朋友A, 朋友B">
