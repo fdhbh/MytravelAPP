@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>旅遊計畫 V2 | 經典穩定版</title>
+    <title>旅遊計畫 V2.2 | 經典穩定版</title>
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Tailwind CSS -->
@@ -88,10 +88,6 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <button @click="showSettingsModal = true" class="text-teal-100 hover:text-white hover:bg-teal-500/30 p-2 rounded-full transition">
-                        <i class="ph-bold ph-gear text-xl"></i>
-                    </button>
-
                     <button @click="copyShareLink" class="text-teal-100 hover:text-white hover:bg-teal-500/30 p-2 rounded-full transition">
                         <i class="ph-bold ph-share-network text-xl"></i>
                     </button>
@@ -183,7 +179,6 @@
                                         <div class="flex gap-2">
                                             <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 bg-teal-50 p-1.5 rounded-lg text-xs"><i class="ph-bold ph-map-pin"></i></a>
                                             <a v-if="isKoreaTrip" :href="getNaverMapLink(item.location)" target="_blank" class="text-green-500 bg-green-50 p-1.5 rounded-lg text-xs font-bold">N</a>
-                                            <button v-if="item.location" @click="askAiAboutPlace(item)" class="text-purple-500 bg-purple-50 p-1.5 rounded-lg text-xs"><i v-if="loadingNoteIdx===idx" class="ph-bold ph-spinner animate-spin"></i><i v-else class="ph-bold ph-magic-wand"></i></button>
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <button @click="item.showTicketInput = !item.showTicketInput" class="text-xs text-slate-400 hover:text-teal-500"><i class="ph-bold ph-ticket"></i></button>
@@ -201,7 +196,6 @@
                     
                     <div class="flex gap-2">
                          <button @click="addItem" class="flex-1 bg-white border border-dashed border-teal-300 text-teal-500 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-teal-50"><i class="ph-bold ph-plus"></i> 新增行程</button>
-                         <button @click="aiPlanDay" :disabled="isAiPlanning" class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 rounded-xl font-bold flex items-center gap-2 shadow-md"><i v-if="isAiPlanning" class="ph-bold ph-spinner animate-spin"></i><i v-else class="ph-fill ph-sparkle"></i> AI</button>
                     </div>
                 </div>
                 <div class="mt-12 pt-6 border-t border-slate-200 text-center">
@@ -419,7 +413,7 @@
                 <div class="flex-1 bg-black/50 backdrop-blur-sm z-40" @click="showTripMenu = false"></div>
             </div>
         </transition>
-        
+
         <!-- 設定 & 初始視窗 -->
         <div v-if="showSetupModal" class="absolute inset-0 bg-teal-800/90 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-fade-in">
             <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
@@ -427,36 +421,23 @@
                     <h2 class="text-2xl font-bold text-slate-800">建立新旅程</h2>
                     <p class="text-sm text-slate-400">登入後可建立雲端共用行程</p>
                 </div>
+                <!-- Setup Form -->
                 <div class="space-y-4">
                     <div><label class="text-xs font-bold text-slate-400">目的地</label><input v-model="setup.destination" class="w-full border rounded-xl px-4 py-3 font-bold"></div>
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="text-xs font-bold text-slate-400">日期</label><input v-model="setup.startDate" type="date" class="w-full border rounded-xl px-3 py-2 text-sm"></div>
                         <div><label class="text-xs font-bold text-slate-400">天數</label><input v-model.number="setup.days" type="number" class="w-full border rounded-xl px-3 py-2 text-center font-bold"></div>
                     </div>
-                    <!-- 增加 Loading 狀態 -->
-                    <button @click="initTrip" :disabled="isRateLoading" class="w-full bg-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg mt-2 flex items-center justify-center gap-2">
-                        <span v-if="isRateLoading" class="animate-spin"><i class="ph-bold ph-spinner"></i></span>
-                        <span v-else>開始規劃 <i class="ph-bold ph-arrow-right"></i></span>
-                    </button>
-                    <!-- 雲端建立按鈕 -->
-                    <button @click="createCloudTrip" :disabled="isRateLoading" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg mt-2 flex items-center justify-center gap-2">
-                        <span>建立新旅程 (多人版)</span>
-                    </button>
-                    <div v-if="tripList.length > 0" class="mt-6 pt-4 border-t border-slate-100">
-                        <button @click="showSetupModal=false; showTripMenu=true" class="w-full text-slate-500 text-sm hover:text-teal-600">檢視歷史行程</button>
-                    </div>
+                    <button @click="initTrip" class="w-full bg-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg mt-2">開始規劃</button>
+                </div>
+                <div v-if="tripList.length > 0" class="mt-6 pt-4 border-t border-slate-100">
+                    <button @click="showSetupModal=false; showTripMenu=true" class="w-full text-slate-500 text-sm hover:text-teal-600">檢視歷史行程</button>
                 </div>
             </div>
         </div>
         
-        <!-- 設定視窗 (API Key) -->
-        <div v-if="showSettingsModal" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6" @click.self="showSettingsModal = false">
-            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
-                <h2 class="text-xl font-bold mb-4">Gemini API Key</h2>
-                <input v-model="geminiApiKey" type="password" class="w-full border rounded-xl px-3 py-2 mb-4" placeholder="AIza...">
-                <button @click="showSettingsModal = false" class="w-full bg-teal-600 text-white font-bold py-2 rounded-xl">儲存</button>
-            </div>
-        </div>
+        <!-- 空白的設定視窗 (防止報錯) -->
+        <div v-if="showSettingsModal" style="display:none"></div>
 
     </div>
 
@@ -496,13 +477,16 @@
 
         const app = createApp({
             setup() {
+                // States
                 const viewMode = ref('plan');
                 const currentDayIdx = ref(0);
                 const showSetupModal = ref(false);
-                const showSettingsModal = ref(false);
                 const showTripMenu = ref(false);
-                const geminiApiKey = ref('');
                 const itineraryList = ref(null);
+                
+                // 補回缺失變數以修復錯誤 (雖然在無 AI 版用不到)
+                const showSettingsModal = ref(false);
+                const geminiApiKey = ref('');
                 
                 // Trip Data States
                 const days = ref([]);
@@ -526,11 +510,10 @@
                 const syncStatus = ref('');
                 let isRemoteUpdate = false;
 
-                // Recommendations & AI
+                // Recommendations & AI (Placeholder)
                 const recommendationsMap = reactive({});
                 const isSearchingRecs = ref(false);
                 const searchTargetIndex = ref('');
-                const isAiPlanning = ref(false);
                 const loadingNoteIdx = ref(null);
 
                 let mapInstance = null;
@@ -575,105 +558,11 @@
                 const getTimePeriod = (t) => { if(!t) return '時間'; const h=parseInt(t.split(':')[0]); return h<5?'凌晨':h<11?'上午':h<14?'中午':h<18?'下午':'晚上'; };
                 const getDotColor = (t) => t==='food'?'bg-orange-400':t==='shop'?'bg-pink-400':t==='flight'?'bg-blue-500':t==='hotel'?'bg-indigo-500':'bg-teal-500';
 
-                // --- 2. AI Functions (Defined BEFORE return) ---
-                const callGeminiAPI = async (prompt) => {
-                    if (!geminiApiKey.value) {
-                        alert("請先點擊右上角設定齒輪，輸入您的 Gemini API Key 才能使用 AI 功能。");
-                        showSettingsModal.value = true;
-                        return null;
-                    }
-
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey.value}`;
-                    const payload = {
-                        contents: [{ parts: [{ text: prompt }] }]
-                    };
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        const data = await response.json();
-                        if (data.error) {
-                            console.error("API Error:", data.error);
-                            alert("API 連線錯誤: " + (data.error.message || "未知錯誤"));
-                            return null;
-                        }
-                        return data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    } catch (e) {
-                        console.error("Gemini API Error:", e);
-                        alert("連線失敗，請檢查網路或 API Key");
-                        return null;
-                    }
-                };
-
-                const aiPlanDay = async () => {
-                    if (!setup.value.destination) { alert('請先設定目的地'); return; }
-                    if (isAiPlanning.value) return;
-                    isAiPlanning.value = true;
-                    
-                    const prompt = `
-                    You are a helpful travel assistant. Please plan a one-day itinerary for Day ${currentDayIdx.value + 1} in ${setup.value.destination}.
-                    Return a JSON array of objects. Do not include markdown formatting (like \`\`\`json).
-                    Each object must have:
-                    - "time" (string, HH:MM format, start from morning)
-                    - "type" (string, one of: "spot", "food", "shop", "transport", "hotel")
-                    - "activity" (string, name of the activity or place)
-                    - "location" (string, specific place name for map search)
-                    - "note" (string, brief tip or description, max 20 words)
-                    
-                    Language: Traditional Chinese (Taiwan).
-                    Generate about 5-7 items.
-                    `;
-
-                    const result = await callGeminiAPI(prompt);
-                    if (result) {
-                        try {
-                            const jsonStr = result.replace(/```json/g, '').replace(/```/g, '').trim();
-                            const newItems = JSON.parse(jsonStr);
-                            if (Array.isArray(newItems)) {
-                                const itemsWithId = newItems.map(i => ({ ...i, id: Date.now() + Math.random(), ticketUrl: '' }));
-                                if (!currentDay.value.items) currentDay.value.items = [];
-                                currentDay.value.items.push(...itemsWithId);
-                            } else {
-                                alert("AI 格式解析失敗，請重試");
-                            }
-                        } catch (e) {
-                            console.error(e);
-                            alert("AI 回傳格式有誤，請稍後再試");
-                        }
-                    } 
-                    isAiPlanning.value = false;
-                };
-
-                const askAiAboutPlace = async (item) => {
-                    if (!item.location) return;
-                    const idx = currentDay.value.items.indexOf(item);
-                    loadingNoteIdx.value = idx;
-                    
-                    const prompt = `
-                    Briefly describe "${item.location}" in ${setup.value.destination} for a tourist. 
-                    Language: Traditional Chinese (Taiwan). 
-                    Max 30 words. Focus on what makes it special.
-                    `;
-                    
-                    const result = await callGeminiAPI(prompt);
-                    if (result) {
-                        item.note = result.trim();
-                        await nextTick();
-                        resizeAllTextareas(); 
-                    }
-                    loadingNoteIdx.value = null;
-                };
-
-                // --- 3. Computed Properties ---
+                // --- 2. Computed ---
                 const currentDay = computed(() => {
-                    // Safe access with fallback
                     if (!days.value || days.value.length === 0) return createDayObject(new Date().toISOString().split('T')[0]);
                     const day = days.value[currentDayIdx.value];
                     if (!day) return createDayObject(new Date().toISOString().split('T')[0]);
-                    
-                    // Ensure structure exists
                     if (!day.items) day.items = [];
                     if (!day.flight) day.flight = {};
                     return day;
@@ -725,7 +614,7 @@
                 });
                 const syncStatusIcon = computed(() => tripId.value ? 'ph-cloud-check' : 'ph-floppy-disk');
 
-                // --- 4. Other UI/Business Functions ---
+                // --- 3. UI/Business Functions ---
                 const createTripMode = () => {
                     tripId.value = null;
                     showSetupModal.value = true;
@@ -753,7 +642,6 @@
                      }
                 };
                 const addItem = () => {
-                    // Safe add
                     if (!currentDay.value.items) currentDay.value.items = [];
                     currentDay.value.items.push({ 
                         id: Date.now() + Math.random(), 
@@ -1181,12 +1069,10 @@
                     getGoogleMapLink, getNaverMapLink, getDayName, detectRate, 
                     addManualTicket, removeManualTicket, copyShareLink,
                     getTicketItems, hasTicketItems, openSetupModal: () => { showSetupModal.value = true; showTripMenu.value = false; }, adjustHeight, itineraryList,
-                    createNewTrip, switchTrip, deleteTrip, isRateLoading,
-                    aiPlanDay, isAiPlanning, askAiAboutPlace
+                    createNewTrip, switchTrip, deleteTrip, isRateLoading
                 };
             }
         }).mount('#app')
     </script>
 </body>
 </html>
-
