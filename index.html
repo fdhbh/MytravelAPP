@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>旅遊計畫 V2.2 | 經典穩定版</title>
+    <title>旅遊計畫 V2.3 | 經典穩定版</title>
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Tailwind CSS -->
@@ -430,14 +430,11 @@
                     </div>
                     <button @click="initTrip" class="w-full bg-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg mt-2">開始規劃</button>
                 </div>
-                <div v-if="tripList.length > 0" class="mt-6 pt-4 border-t border-slate-100">
+                <div v-if="tripList.length > 0 && !user" class="mt-6 pt-4 border-t border-slate-100">
                     <button @click="showSetupModal=false; showTripMenu=true" class="w-full text-slate-500 text-sm hover:text-teal-600">檢視歷史行程</button>
                 </div>
             </div>
         </div>
-        
-        <!-- 空白的設定視窗 (防止報錯) -->
-        <div v-if="showSettingsModal" style="display:none"></div>
 
     </div>
 
@@ -449,7 +446,7 @@
         // --- FIREBASE 設定區 (請填入你的設定) ---
         const firebaseConfig = {
             // 請將 Firebase Console > Project Settings > General > Your apps 裡面的 config 貼在這裡
-            apiKey: "AIzaSyBHBeNkqkVoRl4E7FAcEPI-c2M-0ffSFPM",
+           apiKey: "AIzaSyBHBeNkqkVoRl4E7FAcEPI-c2M-0ffSFPM",
         authDomain: "mytravelapp-f9c1c.firebaseapp.com",
         projectId: "mytravelapp-f9c1c",
         storageBucket: "mytravelapp-f9c1c.firebasestorage.app",
@@ -477,17 +474,24 @@
 
         const app = createApp({
             setup() {
-                // States
                 const viewMode = ref('plan');
                 const currentDayIdx = ref(0);
                 const showSetupModal = ref(false);
                 const showTripMenu = ref(false);
                 const itineraryList = ref(null);
                 
-                // 補回缺失變數以修復錯誤 (雖然在無 AI 版用不到)
+                // 補回變數 (雖然此版本無 UI 使用，但避免 Template 報錯)
                 const showSettingsModal = ref(false);
                 const geminiApiKey = ref('');
                 
+                // Auth States
+                const user = ref(null);
+                const cloudTrips = ref([]);
+                const isLoadingTrips = ref(false);
+                const permissionDenied = ref(false);
+                const isPublic = ref(true);
+                const tripOwnerId = ref(null);
+
                 // Trip Data States
                 const days = ref([]);
                 const expenses = ref([]);
@@ -559,6 +563,7 @@
                 const getDotColor = (t) => t==='food'?'bg-orange-400':t==='shop'?'bg-pink-400':t==='flight'?'bg-blue-500':t==='hotel'?'bg-indigo-500':'bg-teal-500';
 
                 // --- 2. Computed ---
+                const isOwner = computed(() => user.value && tripOwnerId.value === user.value.uid);
                 const currentDay = computed(() => {
                     if (!days.value || days.value.length === 0) return createDayObject(new Date().toISOString().split('T')[0]);
                     const day = days.value[currentDayIdx.value];
