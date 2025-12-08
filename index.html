@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>旅遊計畫 v2.41</title>
+    <title>旅遊計畫 v2.42</title>
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Tailwind CSS -->
@@ -52,6 +52,11 @@
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
+
+        /* [v2.42 Fix] 隱藏原生時間選擇器圖示以節省空間，解決電腦版顯示裁切問題 */
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            display: none;
+        }
     </style>
 </head>
 <body class="text-slate-700">
@@ -93,7 +98,6 @@
                                 </button>
                             </div>
                             
-                            <!-- 搜尋結果列表 (作者搜尋可能有多筆) -->
                             <div v-if="searchResults.length > 0" class="space-y-2 mb-2">
                                 <div class="text-[10px] text-teal-600 font-bold">搜尋結果 ({{ searchResults.length }})</div>
                                 <div v-for="res in searchResults" :key="res.id" @click="loadFromHistory(res.id)" class="bg-white p-2 rounded-lg border border-teal-200 shadow-sm cursor-pointer hover:bg-teal-50">
@@ -131,7 +135,7 @@
                         <button @click="resetToHome" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
                             <i class="ph-bold ph-house"></i> 回首頁 / 建立新行程
                         </button>
-                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.41</div>
+                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.42</div>
                     </div>
                 </div>
             </transition>
@@ -141,18 +145,15 @@
         <header class="bg-teal-600 text-white shrink-0 z-20 shadow-md relative">
             <div class="p-4 flex justify-between items-center">
                 <div class="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                    <!-- 漢堡選單按鈕 -->
                     <button @click="showDrawer = true" class="text-white hover:bg-teal-700 p-1.5 -ml-1.5 rounded-lg transition shrink-0">
                         <i class="ph-bold ph-list text-2xl"></i>
                     </button>
-                    
                     <div class="overflow-hidden flex-1">
                         <h1 class="text-xl font-bold tracking-wide flex items-center gap-2 truncate">
                             {{ setup.destination || '旅遊計畫' }} <i class="ph-fill ph-airplane-tilt text-sm opacity-70"></i>
                         </h1>
                     </div>
                 </div>
-                <!-- 整合按鈕群組 -->
                 <div class="flex bg-teal-800/50 p-1 rounded-lg shrink-0">
                     <button @click="viewMode = 'plan'" :class="viewMode === 'plan' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200 hover:text-white'" class="p-2 rounded-md transition-all" title="行程"><i class="ph-bold ph-calendar-check text-lg"></i></button>
                     <button @click="viewMode = 'tickets'" :class="viewMode === 'tickets' ? 'bg-white text-teal-700 shadow-sm' : 'text-teal-200 hover:text-white'" class="p-2 rounded-md transition-all" title="票券"><i class="ph-bold ph-ticket text-lg"></i></button>
@@ -161,7 +162,6 @@
                 </div>
             </div>
             
-            <!-- 日期導航 -->
             <div class="flex overflow-x-auto hide-scroll px-2 pb-3 space-x-3 snap-x">
                 <div v-for="(day, index) in days" :key="index" @click="currentDayIdx = index; viewMode = 'plan'" class="snap-center shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl cursor-pointer transition-all border-2" :class="currentDayIdx === index ? 'bg-white text-teal-600 border-white shadow-lg scale-105' : 'bg-teal-500/50 text-teal-100 border-transparent hover:bg-teal-500'">
                     <span class="text-[10px] font-bold opacity-90 mb-0.5">{{ day.shortDate }} ({{ getDayName(day.fullDate) }})</span>
@@ -173,10 +173,10 @@
 
         <!-- Main Content -->
         <main class="flex-1 overflow-y-auto bg-slate-50 relative hide-scroll overscroll-none pb-safe">
-            <!-- 行程表, 票券, 分帳, 翻譯 視圖 (內容保持不變，為節省篇幅) -->
+            
+            <!-- 行程表 (Plan View) -->
             <transition name="fade" mode="out-in">
                 <div v-if="viewMode === 'plan'" :key="currentDayIdx" class="p-4 pb-24">
-                    <!-- ... Plan View Content ... -->
                     <div class="bg-white p-4 rounded-2xl shadow-sm mb-4 border border-slate-100 flex justify-between items-start sticky top-0 z-10">
                         <div class="flex-1 relative pt-0.5">
                             <input type="date" :value="currentDay.fullDate" @change="updateDate($event, currentDay)" class="absolute top-0 left-0 w-40 h-8 opacity-0 z-20 cursor-pointer">
@@ -190,6 +190,8 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 航班卡片 (v2.42 更新) -->
                     <div class="mb-6">
                         <div v-if="currentDay.flight" class="relative bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl text-white shadow-lg overflow-hidden">
                             <div class="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-50 rounded-full z-10"></div>
@@ -197,14 +199,44 @@
                             <div class="p-4 relative z-0">
                                 <button @click="toggleFlightCard" class="absolute top-2 right-2 text-white/50 hover:text-white hover:bg-white/20 rounded-full p-1 transition"><i class="ph-bold ph-x"></i></button>
                                 <div class="flex justify-between items-center mb-1 pt-2">
-                                    <div class="flex flex-col items-center w-1/3"><input v-model="currentDay.flight.startTime" type="time" class="text-2xl font-black bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0"><div class="text-[9px] opacity-60 mt-1">起飛</div><input v-model="currentDay.flight.startAirport" class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="TPE"></div>
-                                    <div class="flex flex-col items-center justify-center w-1/3 px-2"><i class="ph-fill ph-airplane text-2xl mb-1 transform rotate-90"></i><input v-model="currentDay.flight.number" class="text-[10px] font-mono tracking-widest opacity-80 bg-transparent border-none text-center w-full text-white placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="BR198"></div>
-                                    <div class="flex flex-col items-center w-1/3"><input v-model="currentDay.flight.endTime" type="time" class="text-2xl font-black bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0"><div class="relative w-full mt-0.5"><select v-model="currentDay.flight.arrivalOffset" class="appearance-none bg-black/20 text-white text-[9px] rounded border-none w-full py-0.5 px-1 text-center focus:ring-0 cursor-pointer hover:bg-black/30"><option value="0">同日</option><option value="1">+1天</option><option value="-1">-1天</option></select></div><input v-model="currentDay.flight.endAirport" class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="NRT"></div>
+                                    <!-- 出發 -->
+                                    <div class="flex flex-col items-center w-1/3">
+                                        <!-- [Fix] 字體縮小為 text-xl，改用 font-bold -->
+                                        <input v-model="currentDay.flight.startTime" type="time" class="text-xl font-bold bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0">
+                                        <div class="text-[9px] opacity-60 mt-1">起飛</div>
+                                        <input v-model="currentDay.flight.startAirport" class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="TPE">
+                                    </div>
+                                    <!-- 資訊與搜尋 -->
+                                    <div class="flex flex-col items-center justify-center w-1/3 px-1">
+                                        <i class="ph-fill ph-airplane text-2xl mb-1 transform rotate-90"></i>
+                                        <div class="relative w-full flex items-center justify-center gap-1">
+                                            <input v-model="currentDay.flight.number" class="text-[10px] font-mono tracking-widest opacity-80 bg-transparent border-none text-center w-full text-white placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="航班號">
+                                            <!-- [New] 航班搜尋按鈕 -->
+                                            <button v-if="currentDay.flight.number" @click="searchFlight(currentDay.flight.number)" class="text-white/70 hover:text-white p-1 hover:bg-white/10 rounded transition" title="搜尋航班">
+                                                <i class="ph-bold ph-magnifying-glass text-xs"></i>
+                                            </button>
+                                        </div>
+                                        <div class="w-full h-0.5 bg-white/30 rounded-full mt-1"></div>
+                                    </div>
+                                    <!-- 抵達 -->
+                                    <div class="flex flex-col items-center w-1/3">
+                                        <!-- [Fix] 字體縮小為 text-xl，改用 font-bold -->
+                                        <input v-model="currentDay.flight.endTime" type="time" class="text-xl font-bold bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0">
+                                        <div class="relative w-full mt-0.5">
+                                            <select v-model="currentDay.flight.arrivalOffset" class="appearance-none bg-black/20 text-white text-[9px] rounded border-none w-full py-0.5 px-1 text-center focus:ring-0 cursor-pointer hover:bg-black/30">
+                                                <option value="0">同日</option>
+                                                <option value="1">+1天</option>
+                                                <option value="-1">-1天</option>
+                                            </select>
+                                        </div>
+                                        <input v-model="currentDay.flight.endAirport" class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="NRT">
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <button v-else @click="toggleFlightCard" class="w-full py-3 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-teal-400 hover:text-teal-500 hover:bg-teal-50/50 transition flex items-center justify-center gap-2 group"><i class="ph-bold ph-airplane-tilt text-lg group-hover:scale-110 transition-transform"></i><span class="text-sm font-bold">新增當日航班資訊</span></button>
                     </div>
+
                     <div class="relative pl-4 border-l-2 border-teal-100">
                         <div ref="itineraryList" class="space-y-6 pb-8">
                             <div v-for="(item, idx) in currentDay.items" :key="item.id" class="relative group cursor-default">
@@ -652,6 +684,12 @@
                 const removeTicket = (id) => { const idx=tickets.value.findIndex(t=>t.id===id); if(idx!==-1 && confirm('刪除?')) tickets.value.splice(idx,1); };
                 const copyShareLink = () => { navigator.clipboard.writeText(window.location.href).then(()=>alert('連結已複製')); };
                 
+                // Flight Search (v2.42 New)
+                const searchFlight = (flightNo) => {
+                    if(!flightNo) return;
+                    window.open(`https://www.google.com/search?q=航班+${encodeURIComponent(flightNo)}`, '_blank');
+                };
+
                 // LBS & Detect
                 const searchNearby = async (item, idx) => {
                     if(!item.location) return;
@@ -729,7 +767,8 @@
                     homeTab, checkIdAvailability, idStatus, searchQuery, searchResults, isSearching, searchMsg, searchTrip,
                     isLocked, unlockTrip, unlockCodeInput, showDrawer, historyTrips, loadFromHistory, clearHistory, resetToHome,
                     showSettingsModal, openSettings, saveSettings, tripId,
-                    newMigrateId, isMigrating, migrateTripId
+                    newMigrateId, isMigrating, migrateTripId,
+                    searchFlight // v2.42 New
                 };
             }
         }).mount('#app')
