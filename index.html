@@ -121,7 +121,7 @@
                     
                     <div class="p-4 border-t border-slate-200 bg-white">
                         <button @click="resetToHome" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2"><i class="ph-bold ph-house"></i> 回首頁 / 建立新行程</button>
-                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.55</div>
+                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.56</div>
                     </div>
                 </div>
             </transition>
@@ -144,7 +144,6 @@
                 </div>
             </div>
             
-            <!-- [v2.5] 僅在 Plan 模式顯示日期列 -->
             <div v-if="viewMode === 'plan'" class="flex overflow-x-auto hide-scroll px-2 pb-3 space-x-3 snap-x">
                 <div v-for="(day, index) in days" :key="index" @click="currentDayIdx = index; viewMode = 'plan'" class="snap-center shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl cursor-pointer transition-all border-2" :class="currentDayIdx === index ? 'bg-white text-teal-600 border-white shadow-lg scale-105' : 'bg-teal-500/50 text-teal-100 border-transparent hover:bg-teal-500'">
                     <span class="text-[10px] font-bold opacity-90 mb-0.5">{{ day.shortDate }} ({{ getDayName(day.fullDate) }})</span>
@@ -435,8 +434,8 @@
                 });
                 
                 const isRateLoading = ref(false);
-                // [v2.54 Fix] 補全變數結構
-                const weather = ref({ temp: null, icon: 'ph-sun', code: 0, location: '', daily: [] });
+                // [v2.56 Revert] weather structure from v2.41
+                const weather = ref({ temp: null, icon: 'ph-sun', daily: [] });
                 const syncStatus = ref('');
                 let isRemoteUpdate = false;
                 const recommendationsMap = reactive({});
@@ -471,31 +470,12 @@
                 const currencyLabel = computed(() => setup.value.currency || '外幣');
                 const currencySymbol = computed(() => ({ 'JPY':'¥', 'CNY':'¥', 'USD':'$', 'EUR':'€', 'KRW':'₩', 'TWD':'NT$' }[setup.value.currency] || '$'));
                 
+                // [v2.56 Revert] weatherDisplay logic from v2.41
                 const weatherDisplay = computed(() => {
-                    const currentTemp = (weather.value.temp !== null && weather.value.temp !== undefined) ? weather.value.temp : '--';
-                    const fallback = { temp: currentTemp, icon: weather.value.icon || 'ph-sun', label: '目前', isForecast: false };
-
-                    if (!currentDay.value.fullDate || !weather.value.daily?.time) return fallback;
-                    
-                    let idx = weather.value.daily.time.indexOf(currentDay.value.fullDate);
-                    
-                    // [v2.54 Fix] 模糊日期比對 (解決舊行程時區問題)
-                    if (idx === -1) {
-                        // 嘗試只比對 MM-DD
-                        const targetMD = currentDay.value.fullDate.slice(5); // "12-11"
-                        idx = weather.value.daily.time.findIndex(t => t.endsWith(targetMD));
-                    }
-
-                    if (idx !== -1) {
-                        return { 
-                            temp: `${Math.round(weather.value.daily.temperature_2m_min[idx])}°-${Math.round(weather.value.daily.temperature_2m_max[idx])}°`, 
-                            icon: getWeatherIcon(weather.value.daily.weathercode[idx]), 
-                            label: '預報', 
-                            isForecast: true 
-                        };
-                    }
-                    
-                    return fallback;
+                    if (!currentDay.value.fullDate || weather.value.daily.length === 0) return { temp: weather.value.temp || '--', icon: weather.value.icon || 'ph-sun', label: '目前', isForecast: false };
+                    const idx = weather.value.daily.time.indexOf(currentDay.value.fullDate);
+                    if (idx !== -1) return { temp: `${Math.round(weather.value.daily.temperature_2m_min[idx])}°-${Math.round(weather.value.daily.temperature_2m_max[idx])}°`, icon: getWeatherIcon(weather.value.daily.weathercode[idx]), label: '預報', isForecast: true };
+                    return { temp: weather.value.temp || '--', icon: weather.value.icon || 'ph-sun', label: '目前', isForecast: false };
                 });
 
                 const syncStatusClass = computed(() => ({ '儲存中...': 'sync-saving', '已同步': 'sync-saved' }[syncStatus.value] || 'sync-error'));
@@ -570,6 +550,7 @@
 
                 const loadTripData = (data) => {
                     isRemoteUpdate = true;
+                    // [v2.56 Revert] No weather loading from DB
                     const { lastUpdate, ...rest } = data;
                     lastSavedState.value = JSON.stringify(rest);
                     
@@ -582,11 +563,6 @@
                     setup.value = data.config || {};
                     setup.value.author = data.author || setup.value.author || '';
                     setup.value.extractionCode = data.extractionCode || '';
-
-                    // [v2.55 Fix] Load cached weather from DB immediately
-                    if (data.weather) {
-                        weather.value = data.weather;
-                    }
                     
                     updateParticipants();
                     
@@ -748,18 +724,18 @@
                         fetchWeather(setup.value.destination);
                     } catch(e){} finally { isRateLoading.value = false; }
                 };
+
+                // [v2.56 Revert] Revert fetchWeather to v2.41 logic (with forecast_days=14 enhancement)
                 const fetchWeather = async (loc) => {
                     try {
                         const d = await (await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(loc)}&limit=1`)).json();
                         if(d?.[0]) {
-                            // [v2.54 Fix] Change to forecast_days=14 (safer for Open-Meteo)
                             const w = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${d[0].lat}&longitude=${d[0].lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=14`)).json();
                             
-                            if(w.current_weather) {
-                                weather.value.temp=Math.round(w.current_weather.temperature); 
-                                weather.value.icon=getWeatherIcon(w.current_weather.weathercode); 
-                            }
-                            if(w.daily) weather.value.daily=w.daily;
+                            // Simple v2.41 logic
+                            weather.value.temp = Math.round(w.current_weather.temperature);
+                            weather.value.icon = getWeatherIcon(w.current_weather.weathercode);
+                            if(w.daily) weather.value.daily = w.daily;
                         }
                     } catch(e) { console.error("Weather fetch failed", e); }
                 };
@@ -767,10 +743,10 @@
                 const saveToCloud = debounce(async () => {
                     if(!db || !tripId.value || isRemoteUpdate || isLocked.value) return;
                     
+                    // [v2.56 Revert] Remove weather from saved data
                     const dataToCompare = {
                         days: days.value, expenses: expenses.value, tickets: tickets.value, participantsStr: participantsStr.value,
-                        rate: exchangeRate.value, config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode,
-                        weather: weather.value // [v2.55 Fix] Add weather to saved data
+                        rate: exchangeRate.value, config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode
                     };
                     const currentJson = JSON.stringify(dataToCompare);
                     
@@ -795,8 +771,8 @@
                     if (tid && db) { showSetupModal.value = false; startListening(tid); } 
                     else { showSetupModal.value = true; }
                     
-                    // [v2.55 Fix] Add weather to watched variables to trigger save on update
-                    watch([days, expenses, tickets, exchangeRate, participantsStr, weather], () => saveToCloud(), { deep: true });
+                    // [v2.56 Revert] Remove weather from watch
+                    watch([days, expenses, tickets, exchangeRate, participantsStr], () => saveToCloud(), { deep: true });
                 });
 
                 watch([viewMode, currentDayIdx], async () => { if (viewMode.value === 'plan') { await nextTick(); initSortable(); }});
