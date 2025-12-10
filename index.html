@@ -135,7 +135,7 @@
                         <button @click="resetToHome" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
                             <i class="ph-bold ph-house"></i> 回首頁 / 建立新行程
                         </button>
-                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.52</div>
+                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.53</div>
                     </div>
                 </div>
             </transition>
@@ -539,10 +539,29 @@
                 const currencyLabel = computed(() => setup.value.currency || '外幣');
                 const currencySymbol = computed(() => ({ 'JPY':'¥', 'CNY':'¥', 'USD':'$', 'EUR':'€', 'KRW':'₩', 'TWD':'NT$' }[setup.value.currency] || '$'));
                 const weatherDisplay = computed(() => {
-                    if (!currentDay.value.fullDate || weather.value.daily.length === 0) return { temp: weather.value.temp || '--', icon: weather.value.icon || 'ph-sun', label: '目前', isForecast: false };
+                    if (!currentDay.value.fullDate || !weather.value.daily?.time) {
+                        return { 
+                            temp: (weather.value.temp !== null && weather.value.temp !== undefined) ? weather.value.temp : '--', 
+                            icon: weather.value.icon || 'ph-sun', 
+                            label: '目前', 
+                            isForecast: false 
+                        };
+                    }
                     const idx = weather.value.daily.time.indexOf(currentDay.value.fullDate);
-                    if (idx !== -1) return { temp: `${Math.round(weather.value.daily.temperature_2m_min[idx])}°-${Math.round(weather.value.daily.temperature_2m_max[idx])}°`, icon: getWeatherIcon(weather.value.daily.weathercode[idx]), label: '預報', isForecast: true };
-                    return { temp: weather.value.temp || '--', icon: weather.value.icon || 'ph-sun', label: '目前', isForecast: false };
+                    if (idx !== -1) {
+                        return { 
+                            temp: `${Math.round(weather.value.daily.temperature_2m_min[idx])}°-${Math.round(weather.value.daily.temperature_2m_max[idx])}°`, 
+                            icon: getWeatherIcon(weather.value.daily.weathercode[idx]), 
+                            label: '預報', 
+                            isForecast: true 
+                        };
+                    }
+                    return { 
+                        temp: (weather.value.temp !== null && weather.value.temp !== undefined) ? weather.value.temp : '--', 
+                        icon: weather.value.icon || 'ph-sun', 
+                        label: '目前', 
+                        isForecast: false 
+                    };
                 });
                 const syncStatusClass = computed(() => ({ '儲存中...': 'sync-saving', '已同步': 'sync-saved' }[syncStatus.value] || 'sync-error'));
                 const syncStatusIcon = computed(() => ({ '儲存中...': 'ph-spinner animate-spin', '已同步': 'ph-check-circle' }[syncStatus.value] || 'ph-warning'));
@@ -563,6 +582,13 @@
                 const clearHistory = () => { historyTrips.value = []; localStorage.removeItem('trip_history_v2'); };
 
                 // --- Core Logic ---
+                const getLocalDateString = (d) => {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${dd}`;
+                };
+
                 const checkIdAvailability = async () => {
                     if (!setup.value.customId) { idStatus.value = {valid:false, msg:''}; return; }
                     const id = setup.value.customId.trim();
@@ -579,11 +605,21 @@
                     if (!setup.value.extractionCode) return alert("請設定提取碼");
                     
                     const newDays = [];
-                    const start = new Date(setup.value.startDate);
+                    // Fix: Parse local date correctly
+                    const [y, m, d] = setup.value.startDate.split('-').map(Number);
+                    const start = new Date(y, m - 1, d); // Local time construction
+
                     for(let i=0; i<setup.value.days; i++) {
-                        const d = new Date(start); d.setDate(start.getDate()+i);
-                        const iso = d.toISOString().split('T')[0];
-                        newDays.push({ date: `${d.getMonth()+1}/${d.getDate()}`, shortDate: `${d.getMonth()+1}/${d.getDate()}`, fullDate: iso, title: i===0?'抵達':'行程', items: [] });
+                        const curr = new Date(start); 
+                        curr.setDate(start.getDate()+i);
+                        const iso = getLocalDateString(curr);
+                        newDays.push({ 
+                            date: `${curr.getMonth()+1}/${curr.getDate()}`, 
+                            shortDate: `${curr.getMonth()+1}/${curr.getDate()}`, 
+                            fullDate: iso, 
+                            title: i===0?'抵達':'行程', 
+                            items: [] 
+                        });
                     }
                     try {
                         const newId = setup.value.customId.trim();
@@ -700,8 +736,20 @@
                 const toggleFlightCard = () => { if (currentDay.value.flight) { if(confirm('移除航班?')) currentDay.value.flight = null; } else { currentDay.value.flight = { type: 'arrival', startTime: '10:00', startAirport: 'TPE', number: 'FLIGHT', endTime: '14:00', endAirport: 'DEST', arrivalOffset: 0 }; } };
                 const getDotColor = (t) => t==='food'?'bg-orange-400':t==='shop'?'bg-pink-400':t==='flight'?'bg-blue-500':t==='hotel'?'bg-indigo-500':'bg-teal-500';
                 const updateParticipants = () => { participants.value = participantsStr.value.split(',').map(s=>s.trim()).filter(s=>s); };
-                const updateDate = (e, day) => { const v=e.target.value; if(!v)return; day.fullDate=v; const d=new Date(v); const m=d.getMonth()+1, dd=d.getDate(); day.date=`${m<10?'0'+m:m}/${dd<10?'0'+dd:dd}`; day.shortDate=`${m}/${dd}`; };
-                const getDayName = (str) => str ? ['日','一','二','三','四','五','六'][new Date(str).getDay()] : '';
+                const updateDate = (e, day) => { 
+                    const v = e.target.value; 
+                    if(!v) return; 
+                    day.fullDate = v; // Input value YYYY-MM-DD is correct
+                    const [y, m, d] = v.split('-').map(Number);
+                    const dateObj = new Date(y, m - 1, d);
+                    day.date = `${dateObj.getMonth()+1}/${dateObj.getDate()}`;
+                    day.shortDate = `${dateObj.getMonth()+1}/${dateObj.getDate()}`;
+                };
+                const getDayName = (str) => {
+                    if(!str) return '';
+                    const [y, m, d] = str.split('-').map(Number);
+                    return ['日','一','二','三','四','五','六'][new Date(y, m-1, d).getDay()];
+                };
                 const adjustHeight = (el) => { if(el){ el.style.height='auto'; el.style.height=(el.scrollHeight)+'px'; } };
                 const initSortable = () => {
                     if (sortableInstance) sortableInstance.destroy();
@@ -718,7 +766,7 @@
                 const addDay = () => days.value.push({ date: `D${days.value.length+1}`, title: '', items: [] });
                 const removeCurrentDay = () => { if(days.value.length>1 && confirm('刪除?')) days.value.splice(currentDayIdx.value, 1); };
                 const getGoogleMapLink = (l) => l ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(l)}` : '#';
-                const getNaverMapLinkHelper = (l) => l ? `https://map.naver.com/p/search/${encodeURIComponent(l)}` : '#';
+                
                 const addExpense = () => { if(newExpense.value.item) { expenses.value.unshift({...newExpense.value}); newExpense.value.item=''; newExpense.value.amount=''; }};
                 const removeExpense = (idx) => expenses.value.splice(idx, 1);
                 const addTicket = () => { if(newTicket.value.name) { tickets.value.push({id:Date.now(), ...newTicket.value}); newTicket.value={date:'',name:'',link:''}; }};
