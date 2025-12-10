@@ -135,8 +135,7 @@
                         <button @click="resetToHome" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
                             <i class="ph-bold ph-house"></i> 回首頁 / 建立新行程
                         </button>
-                        <!-- v2.5 更新版本號位置 -->
-                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.5</div>
+                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.51</div>
                     </div>
                 </div>
             </transition>
@@ -163,7 +162,7 @@
                 </div>
             </div>
             
-            <!-- [v2.5 UI修正] 僅在 Plan 模式顯示日期列，節省空間 -->
+            <!-- [v2.5] 僅在 Plan 模式顯示日期列 -->
             <div v-if="viewMode === 'plan'" class="flex overflow-x-auto hide-scroll px-2 pb-3 space-x-3 snap-x">
                 <div v-for="(day, index) in days" :key="index" @click="currentDayIdx = index; viewMode = 'plan'" class="snap-center shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl cursor-pointer transition-all border-2" :class="currentDayIdx === index ? 'bg-white text-teal-600 border-white shadow-lg scale-105' : 'bg-teal-500/50 text-teal-100 border-transparent hover:bg-teal-500'">
                     <span class="text-[10px] font-bold opacity-90 mb-0.5">{{ day.shortDate }} ({{ getDayName(day.fullDate) }})</span>
@@ -595,7 +594,8 @@
                 const loadTripData = (data) => {
                     isRemoteUpdate = true;
                     // [v2.5] Update Lock state
-                    lastSavedState.value = JSON.stringify(data);
+                    const { lastUpdate, ...rest } = data;
+                    lastSavedState.value = JSON.stringify(rest);
                     
                     days.value = data.days || [];
                     days.value.forEach(d => d.items?.forEach(i => { if(!i.id) i.id = Math.random(); if(i.qrcode===undefined) i.qrcode=''; }));
@@ -689,13 +689,6 @@
                     if(!loc) return;
                     const q = encodeURIComponent(loc);
                     const appUrl = `nmap://search?query=${q}&appname=mytravelapp`; // 呼叫 App
-                    const webUrl = `https://map.naver.com/p/search/${q}`; // 網頁版
-                    
-                    // 嘗試開啟 App，若失敗(沒安裝)則在 1.5秒後跳轉網頁
-                    const start = Date.now();
-                    setTimeout(() => {
-                        if (Date.now() - start < 2000) { window.location.href = webUrl; }
-                    }, 1500);
                     window.location.href = appUrl;
                 };
 
@@ -772,17 +765,18 @@
                     if(!db || !tripId.value || isRemoteUpdate || isLocked.value) return;
                     
                     // [v2.5] 智慧寫入鎖：比較現在的資料與上一次存擋的資料是否一致
-                    const dataToSave = {
+                    const dataToCompare = {
                         days: days.value, expenses: expenses.value, tickets: tickets.value, participantsStr: participantsStr.value,
-                        rate: exchangeRate.value, config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode, lastUpdate: new Date()
+                        rate: exchangeRate.value, config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode
                     };
-                    const currentJson = JSON.stringify(dataToSave);
+                    const currentJson = JSON.stringify(dataToCompare);
                     
                     // 如果資料內容完全一樣，直接跳過不寫入 (省流量)
                     if (currentJson === lastSavedState.value) return;
 
                     syncStatus.value = '儲存中...';
                     try {
+                        const dataToSave = { ...dataToCompare, lastUpdate: new Date() };
                         await updateDoc(doc(db, "trips", tripId.value), dataToSave);
                         lastSavedState.value = currentJson; // 更新快照
                         
