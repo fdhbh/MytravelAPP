@@ -135,7 +135,7 @@
                         <button @click="resetToHome" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
                             <i class="ph-bold ph-house"></i> 回首頁 / 建立新行程
                         </button>
-                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.51</div>
+                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.52</div>
                     </div>
                 </div>
             </transition>
@@ -260,10 +260,10 @@
                                             <div class="flex flex-col gap-2 items-center">
                                                 <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1 rounded" title="Google Map"><i class="ph-bold ph-navigation-arrow"></i></a>
                                                 
-                                                <!-- [v2.5] 韓國 Naver Map 按鈕 -->
-                                                <button v-if="isKoreaTrip" @click="openNaverMap(item.location)" class="text-green-500 hover:bg-green-50 p-1 rounded flex flex-col items-center justify-center border border-green-100 shadow-sm w-6 h-6" title="Naver Map (App)">
+                                                <!-- [v2.52 Fix] 改回標準連結 -->
+                                                <a v-if="isKoreaTrip" :href="getNaverMapLink(item.location)" target="_blank" class="text-green-500 hover:bg-green-50 p-1 rounded flex flex-col items-center justify-center border border-green-100 shadow-sm w-6 h-6" title="Naver Map">
                                                     <span class="font-black text-[10px] leading-none">N</span>
-                                                </button>
+                                                </a>
 
                                                 <button @click="removeItem(idx)" class="text-red-300 hover:text-red-500 p-1 rounded"><i class="ph-bold ph-trash"></i></button>
                                             </div>
@@ -285,7 +285,14 @@
             
             <div v-if="viewMode === 'tickets'" class="p-4 pb-24 h-full flex flex-col">
                 <div class="mb-4 bg-gradient-to-r from-teal-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg"><h2 class="text-xl font-bold flex items-center gap-2"><i class="ph-bold ph-ticket"></i> 我的票券夾</h2></div>
-                <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border border-slate-100"><div class="flex gap-2 mb-2"><input v-model="newTicket.date" type="date" class="bg-slate-50 border-none rounded-lg text-sm px-3 py-2 w-1/3 text-slate-600"><input v-model="newTicket.name" placeholder="票券名稱" class="bg-slate-50 border-none rounded-lg text-sm px-3 py-2 flex-1 min-w-0"></div><div class="flex gap-2"><div class="relative flex-1"><div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none"><i class="ph-bold ph-link text-slate-400"></i></div><input v-model="newTicket.link" placeholder="QR Code 連結..." class="w-full pl-8 pr-2 py-2 text-sm bg-slate-50 border-none rounded-lg"></div><button @click="addTicket" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm whitespace-nowrap">新增</button></div></div>
+                <!-- [v2.52 Fix] 日期輸入框改為動態切換，解決 placeholder 顯示問題 -->
+                <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border border-slate-100">
+                    <div class="flex gap-2 mb-2">
+                        <input v-model="newTicket.date" type="text" placeholder="選擇日期" class="bg-slate-50 border-none rounded-lg text-sm px-3 py-2 w-1/3 text-slate-600" onfocus="(this.type='date')" onblur="(this.value ? this.type='date' : this.type='text')">
+                        <input v-model="newTicket.name" placeholder="票券名稱" class="bg-slate-50 border-none rounded-lg text-sm px-3 py-2 flex-1 min-w-0">
+                    </div>
+                    <div class="flex gap-2"><div class="relative flex-1"><div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none"><i class="ph-bold ph-link text-slate-400"></i></div><input v-model="newTicket.link" placeholder="QR Code 連結..." class="w-full pl-8 pr-2 py-2 text-sm bg-slate-50 border-none rounded-lg"></div><button @click="addTicket" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm whitespace-nowrap">新增</button></div>
+                </div>
                 <div class="space-y-3 flex-1 overflow-y-auto hide-scroll pb-20"><div v-if="tickets.length === 0" class="text-center py-10 text-slate-300"><i class="ph-duotone ph-ticket text-4xl mb-2"></i><p class="text-sm">還沒有票券，快點新增吧！</p></div><div v-for="(ticket, idx) in sortedTickets" :key="ticket.id" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden group"><div class="p-4 flex justify-between items-start"><div class="flex-1"><div class="flex items-center gap-2 mb-1"><span class="bg-teal-50 text-teal-700 text-[10px] font-bold px-2 py-0.5 rounded border border-teal-100">{{ ticket.date || '無日期' }}</span></div><h3 class="text-lg font-bold text-slate-800">{{ ticket.name }}</h3><a v-if="ticket.link" :href="ticket.link" target="_blank" class="text-xs text-blue-500 hover:underline mt-1 inline-block truncate max-w-[200px]"><i class="ph-bold ph-link"></i> {{ ticket.link }}</a></div><button @click="removeTicket(ticket.id)" class="text-slate-300 hover:text-red-500 p-2"><i class="ph-bold ph-trash"></i></button></div><a v-if="ticket.link" :href="ticket.link" target="_blank" class="block bg-slate-50 p-3 text-center text-slate-600 hover:bg-slate-100 border-t border-slate-100 transition"><i class="ph-bold ph-qr-code text-xl mb-1 block"></i><span class="text-xs font-bold">開啟 QR Code</span></a></div></div>
             </div>
 
@@ -684,13 +691,8 @@
                 const openSettings = () => { showDrawer.value = false; showSettingsModal.value = true; };
                 const saveSettings = () => { if(tripId.value && !isRemoteUpdate) { saveToCloud(); showSettingsModal.value = false; alert("設定已儲存"); } };
 
-                // [v2.5] Naver Map Logic
-                const openNaverMap = (loc) => {
-                    if(!loc) return;
-                    const q = encodeURIComponent(loc);
-                    const appUrl = `nmap://search?query=${q}&appname=mytravelapp`; // 呼叫 App
-                    window.location.href = appUrl;
-                };
+                // [v2.5] Naver Map Logic - Standard Link
+                const getNaverMapLink = (l) => l ? `https://map.naver.com/p/search/${encodeURIComponent(l)}` : '#';
 
                 // --- Common Helpers ---
                 const getWeatherIcon = (c) => { if (c===0) return 'ph-sun'; if (c<4) return 'ph-cloud-sun'; if (c<50) return 'ph-cloud-fog'; if (c<70) return 'ph-cloud-rain'; return 'ph-cloud'; };
@@ -716,7 +718,7 @@
                 const addDay = () => days.value.push({ date: `D${days.value.length+1}`, title: '', items: [] });
                 const removeCurrentDay = () => { if(days.value.length>1 && confirm('刪除?')) days.value.splice(currentDayIdx.value, 1); };
                 const getGoogleMapLink = (l) => l ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(l)}` : '#';
-                const getNaverMapLink = (l) => l ? `https://map.naver.com/p/search/${encodeURIComponent(l)}` : '#';
+                const getNaverMapLinkHelper = (l) => l ? `https://map.naver.com/p/search/${encodeURIComponent(l)}` : '#';
                 const addExpense = () => { if(newExpense.value.item) { expenses.value.unshift({...newExpense.value}); newExpense.value.item=''; newExpense.value.amount=''; }};
                 const removeExpense = (idx) => expenses.value.splice(idx, 1);
                 const addTicket = () => { if(newTicket.value.name) { tickets.value.push({id:Date.now(), ...newTicket.value}); newTicket.value={date:'',name:'',link:''}; }};
@@ -813,7 +815,7 @@
                     isLocked, unlockTrip, unlockCodeInput, showDrawer, historyTrips, loadFromHistory, clearHistory, resetToHome,
                     showSettingsModal, openSettings, saveSettings, tripId,
                     newMigrateId, isMigrating, migrateTripId,
-                    searchFlight, openNaverMap, isKoreaTrip
+                    searchFlight, isKoreaTrip
                 };
             }
         }).mount('#app')
