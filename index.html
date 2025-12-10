@@ -121,7 +121,7 @@
                     
                     <div class="p-4 border-t border-slate-200 bg-white">
                         <button @click="resetToHome" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2"><i class="ph-bold ph-house"></i> 回首頁 / 建立新行程</button>
-                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.54</div>
+                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.55</div>
                     </div>
                 </div>
             </transition>
@@ -144,6 +144,7 @@
                 </div>
             </div>
             
+            <!-- [v2.5] 僅在 Plan 模式顯示日期列 -->
             <div v-if="viewMode === 'plan'" class="flex overflow-x-auto hide-scroll px-2 pb-3 space-x-3 snap-x">
                 <div v-for="(day, index) in days" :key="index" @click="currentDayIdx = index; viewMode = 'plan'" class="snap-center shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl cursor-pointer transition-all border-2" :class="currentDayIdx === index ? 'bg-white text-teal-600 border-white shadow-lg scale-105' : 'bg-teal-500/50 text-teal-100 border-transparent hover:bg-teal-500'">
                     <span class="text-[10px] font-bold opacity-90 mb-0.5">{{ day.shortDate }} ({{ getDayName(day.fullDate) }})</span>
@@ -215,6 +216,7 @@
                                     <div class="flex flex-col gap-2">
                                         <div class="flex items-start gap-3">
                                             <div class="drag-handle cursor-grab text-slate-300 hover:text-teal-500 self-center -ml-1 py-3 px-1 touch-none"><i class="ph-bold ph-dots-six-vertical text-2xl"></i></div>
+                                            <!-- 行程時間 -->
                                             <div class="flex flex-col items-center w-20 shrink-0 gap-2">
                                                 <div class="relative flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-1 w-full h-16 cursor-pointer hover:bg-teal-50 hover:border-teal-200 transition group/time"><span class="text-[10px] font-medium text-slate-400 group-hover/time:text-teal-400">{{ getTimePeriod(item.time) }}</span><span class="text-xl font-bold text-slate-700 group-hover/time:text-teal-600 leading-none font-mono tracking-tight">{{ item.time || '--:--' }}</span><input v-model="item.time" type="time" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" @click="$event.target.showPicker ? $event.target.showPicker() : null"></div>
                                                 <select v-model="item.type" class="text-[10px] bg-white border border-slate-200 rounded-md py-1 px-1 w-full text-center"><option value="spot">📍 景點</option><option value="food">🍴 美食</option><option value="shop">🛍️ 購物</option><option value="transport">🚇 交通</option><option value="flight">✈️ 航班</option><option value="hotel">🏨 住宿</option></select>
@@ -580,6 +582,11 @@
                     setup.value = data.config || {};
                     setup.value.author = data.author || setup.value.author || '';
                     setup.value.extractionCode = data.extractionCode || '';
+
+                    // [v2.55 Fix] Load cached weather from DB immediately
+                    if (data.weather) {
+                        weather.value = data.weather;
+                    }
                     
                     updateParticipants();
                     
@@ -762,7 +769,8 @@
                     
                     const dataToCompare = {
                         days: days.value, expenses: expenses.value, tickets: tickets.value, participantsStr: participantsStr.value,
-                        rate: exchangeRate.value, config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode
+                        rate: exchangeRate.value, config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode,
+                        weather: weather.value // [v2.55 Fix] Add weather to saved data
                     };
                     const currentJson = JSON.stringify(dataToCompare);
                     
@@ -787,7 +795,8 @@
                     if (tid && db) { showSetupModal.value = false; startListening(tid); } 
                     else { showSetupModal.value = true; }
                     
-                    watch([days, expenses, tickets, exchangeRate, participantsStr], () => saveToCloud(), { deep: true });
+                    // [v2.55 Fix] Add weather to watched variables to trigger save on update
+                    watch([days, expenses, tickets, exchangeRate, participantsStr, weather], () => saveToCloud(), { deep: true });
                 });
 
                 watch([viewMode, currentDayIdx], async () => { if (viewMode.value === 'plan') { await nextTick(); initSortable(); }});
