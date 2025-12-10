@@ -86,7 +86,7 @@
                         </div>
                     </div>
                     
-                    <!-- 側邊欄內容：搜尋與歷史 -->
+                    <!-- 側邊欄內容 -->
                     <div class="flex-1 overflow-y-auto p-4 bg-slate-50">
                         <div class="mb-4">
                             <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase">尋找行程</h3>
@@ -97,34 +97,22 @@
                                     <i v-else class="ph-bold ph-magnifying-glass"></i>
                                 </button>
                             </div>
-                            
                             <div v-if="searchResults.length > 0" class="space-y-2 mb-2">
                                 <div class="text-[10px] text-teal-600 font-bold">搜尋結果 ({{ searchResults.length }})</div>
                                 <div v-for="res in searchResults" :key="res.id" @click="loadFromHistory(res.id)" class="bg-white p-2 rounded-lg border border-teal-200 shadow-sm cursor-pointer hover:bg-teal-50">
                                     <div class="font-bold text-slate-700 text-xs">{{ res.destination }}</div>
-                                    <div class="flex justify-between text-[10px] text-slate-400">
-                                        <span>ID: {{ res.id }}</span>
-                                        <span>{{ res.author }}</span>
-                                    </div>
+                                    <div class="flex justify-between text-[10px] text-slate-400"><span>ID: {{ res.id }}</span><span>{{ res.author }}</span></div>
                                 </div>
                             </div>
                             <div v-if="searchMsg" class="text-[10px] text-red-400 text-center">{{ searchMsg }}</div>
                         </div>
-
                         <div>
-                            <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase flex justify-between items-center">
-                                歷史紀錄 <button @click="clearHistory" class="text-[10px] text-red-300 hover:text-red-500">清除</button>
-                            </h3>
+                            <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase flex justify-between items-center">歷史紀錄 <button @click="clearHistory" class="text-[10px] text-red-300 hover:text-red-500">清除</button></h3>
                             <div v-if="historyTrips.length === 0" class="text-center py-4 text-slate-300 text-xs">尚無瀏覽紀錄</div>
                             <div v-else class="space-y-2">
-                                <div v-for="h in historyTrips" :key="h.id" @click="loadFromHistory(h.id)" 
-                                     class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:border-teal-300 transition group relative"
-                                     :class="{'ring-2 ring-teal-500': h.id === tripId}">
+                                <div v-for="h in historyTrips" :key="h.id" @click="loadFromHistory(h.id)" class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:border-teal-300 transition group relative" :class="{'ring-2 ring-teal-500': h.id === tripId}">
                                     <div class="font-bold text-slate-700 text-sm truncate">{{ h.destination || '未命名行程' }}</div>
-                                    <div class="flex justify-between items-center mt-1">
-                                        <div class="text-[10px] text-slate-400 font-mono">{{ h.id }}</div>
-                                        <div class="text-[10px] text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">{{ h.author || '訪客' }}</div>
-                                    </div>
+                                    <div class="flex justify-between items-center mt-1"><div class="text-[10px] text-slate-400 font-mono">{{ h.id }}</div><div class="text-[10px] text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">{{ h.author || '訪客' }}</div></div>
                                     <div v-if="h.id === tripId" class="absolute top-2 right-2 w-2 h-2 bg-teal-500 rounded-full"></div>
                                 </div>
                             </div>
@@ -132,10 +120,8 @@
                     </div>
                     
                     <div class="p-4 border-t border-slate-200 bg-white">
-                        <button @click="resetToHome" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
-                            <i class="ph-bold ph-house"></i> 回首頁 / 建立新行程
-                        </button>
-                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.53</div>
+                        <button @click="resetToHome" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2"><i class="ph-bold ph-house"></i> 回首頁 / 建立新行程</button>
+                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.54</div>
                     </div>
                 </div>
             </transition>
@@ -145,13 +131,9 @@
         <header class="bg-teal-600 text-white shrink-0 z-20 shadow-md relative transition-all duration-300">
             <div class="p-4 flex justify-between items-center">
                 <div class="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                    <button @click="showDrawer = true" class="text-white hover:bg-teal-700 p-1.5 -ml-1.5 rounded-lg transition shrink-0">
-                        <i class="ph-bold ph-list text-2xl"></i>
-                    </button>
+                    <button @click="showDrawer = true" class="text-white hover:bg-teal-700 p-1.5 -ml-1.5 rounded-lg transition shrink-0"><i class="ph-bold ph-list text-2xl"></i></button>
                     <div class="overflow-hidden flex-1">
-                        <h1 class="text-xl font-bold tracking-wide flex items-center gap-2 truncate">
-                            {{ setup.destination || '旅遊計畫' }} <i class="ph-fill ph-airplane-tilt text-sm opacity-70"></i>
-                        </h1>
+                        <h1 class="text-xl font-bold tracking-wide flex items-center gap-2 truncate">{{ setup.destination || '旅遊計畫' }} <i class="ph-fill ph-airplane-tilt text-sm opacity-70"></i></h1>
                     </div>
                 </div>
                 <div class="flex bg-teal-800/50 p-1 rounded-lg shrink-0">
@@ -162,7 +144,6 @@
                 </div>
             </div>
             
-            <!-- [v2.5] 僅在 Plan 模式顯示日期列 -->
             <div v-if="viewMode === 'plan'" class="flex overflow-x-auto hide-scroll px-2 pb-3 space-x-3 snap-x">
                 <div v-for="(day, index) in days" :key="index" @click="currentDayIdx = index; viewMode = 'plan'" class="snap-center shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl cursor-pointer transition-all border-2" :class="currentDayIdx === index ? 'bg-white text-teal-600 border-white shadow-lg scale-105' : 'bg-teal-500/50 text-teal-100 border-transparent hover:bg-teal-500'">
                     <span class="text-[10px] font-bold opacity-90 mb-0.5">{{ day.shortDate }} ({{ getDayName(day.fullDate) }})</span>
@@ -200,32 +181,23 @@
                             <div class="p-4 relative z-0">
                                 <button @click="toggleFlightCard" class="absolute top-2 right-2 text-white/50 hover:text-white hover:bg-white/20 rounded-full p-1 transition"><i class="ph-bold ph-x"></i></button>
                                 <div class="flex justify-between items-center mb-1 pt-2">
-                                    <!-- 出發 -->
                                     <div class="flex flex-col items-center w-1/3">
                                         <input v-model="currentDay.flight.startTime" type="time" class="text-xl font-bold bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0" @click="$event.target.showPicker ? $event.target.showPicker() : null">
                                         <div class="text-[9px] opacity-60 mt-1">起飛</div>
                                         <input v-model="currentDay.flight.startAirport" class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="TPE">
                                     </div>
-                                    <!-- 資訊與搜尋 -->
                                     <div class="flex flex-col items-center justify-center w-1/3 px-1">
                                         <i class="ph-fill ph-airplane text-2xl mb-1 transform rotate-90"></i>
                                         <div class="relative w-full flex items-center justify-center gap-1">
                                             <input v-model="currentDay.flight.number" class="text-[10px] font-mono tracking-widest opacity-80 bg-transparent border-none text-center w-full text-white placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="航班號">
-                                            <button v-if="currentDay.flight.number" @click="searchFlight(currentDay.flight.number)" class="text-white/70 hover:text-white p-1 hover:bg-white/10 rounded transition" title="搜尋航班">
-                                                <i class="ph-bold ph-magnifying-glass text-xs"></i>
-                                            </button>
+                                            <button v-if="currentDay.flight.number" @click="searchFlight(currentDay.flight.number)" class="text-white/70 hover:text-white p-1 hover:bg-white/10 rounded transition" title="搜尋航班"><i class="ph-bold ph-magnifying-glass text-xs"></i></button>
                                         </div>
                                         <div class="w-full h-0.5 bg-white/30 rounded-full mt-1"></div>
                                     </div>
-                                    <!-- 抵達 -->
                                     <div class="flex flex-col items-center w-1/3">
                                         <input v-model="currentDay.flight.endTime" type="time" class="text-xl font-bold bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0" @click="$event.target.showPicker ? $event.target.showPicker() : null">
                                         <div class="relative w-full mt-0.5">
-                                            <select v-model="currentDay.flight.arrivalOffset" class="appearance-none bg-black/20 text-white text-[9px] rounded border-none w-full py-0.5 px-1 text-center focus:ring-0 cursor-pointer hover:bg-black/30">
-                                                <option value="0">同日</option>
-                                                <option value="1">+1天</option>
-                                                <option value="-1">-1天</option>
-                                            </select>
+                                            <select v-model="currentDay.flight.arrivalOffset" class="appearance-none bg-black/20 text-white text-[9px] rounded border-none w-full py-0.5 px-1 text-center focus:ring-0 cursor-pointer hover:bg-black/30"><option value="0">同日</option><option value="1">+1天</option><option value="-1">-1天</option></select>
                                         </div>
                                         <input v-model="currentDay.flight.endAirport" class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="NRT">
                                     </div>
@@ -243,13 +215,8 @@
                                     <div class="flex flex-col gap-2">
                                         <div class="flex items-start gap-3">
                                             <div class="drag-handle cursor-grab text-slate-300 hover:text-teal-500 self-center -ml-1 py-3 px-1 touch-none"><i class="ph-bold ph-dots-six-vertical text-2xl"></i></div>
-                                            <!-- 行程時間 -->
                                             <div class="flex flex-col items-center w-20 shrink-0 gap-2">
-                                                <div class="relative flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-1 w-full h-16 cursor-pointer hover:bg-teal-50 hover:border-teal-200 transition group/time">
-                                                    <span class="text-[10px] font-medium text-slate-400 group-hover/time:text-teal-400">{{ getTimePeriod(item.time) }}</span>
-                                                    <span class="text-xl font-bold text-slate-700 group-hover/time:text-teal-600 leading-none font-mono tracking-tight">{{ item.time || '--:--' }}</span>
-                                                    <input v-model="item.time" type="time" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" @click="$event.target.showPicker ? $event.target.showPicker() : null">
-                                                </div>
+                                                <div class="relative flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-1 w-full h-16 cursor-pointer hover:bg-teal-50 hover:border-teal-200 transition group/time"><span class="text-[10px] font-medium text-slate-400 group-hover/time:text-teal-400">{{ getTimePeriod(item.time) }}</span><span class="text-xl font-bold text-slate-700 group-hover/time:text-teal-600 leading-none font-mono tracking-tight">{{ item.time || '--:--' }}</span><input v-model="item.time" type="time" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" @click="$event.target.showPicker ? $event.target.showPicker() : null"></div>
                                                 <select v-model="item.type" class="text-[10px] bg-white border border-slate-200 rounded-md py-1 px-1 w-full text-center"><option value="spot">📍 景點</option><option value="food">🍴 美食</option><option value="shop">🛍️ 購物</option><option value="transport">🚇 交通</option><option value="flight">✈️ 航班</option><option value="hotel">🏨 住宿</option></select>
                                             </div>
                                             <div class="flex-1 min-w-0 pt-1">
@@ -259,12 +226,7 @@
                                             </div>
                                             <div class="flex flex-col gap-2 items-center">
                                                 <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1 rounded" title="Google Map"><i class="ph-bold ph-navigation-arrow"></i></a>
-                                                
-                                                <!-- [v2.52 Fix] 改回標準連結 -->
-                                                <a v-if="isKoreaTrip" :href="getNaverMapLink(item.location)" target="_blank" class="text-green-500 hover:bg-green-50 p-1 rounded flex flex-col items-center justify-center border border-green-100 shadow-sm w-6 h-6" title="Naver Map">
-                                                    <span class="font-black text-[10px] leading-none">N</span>
-                                                </a>
-
+                                                <a v-if="isKoreaTrip" :href="getNaverMapLink(item.location)" target="_blank" class="text-green-500 hover:bg-green-50 p-1 rounded flex flex-col items-center justify-center border border-green-100 shadow-sm w-6 h-6" title="Naver Map"><span class="font-black text-[10px] leading-none">N</span></a>
                                                 <button @click="removeItem(idx)" class="text-red-300 hover:text-red-500 p-1 rounded"><i class="ph-bold ph-trash"></i></button>
                                             </div>
                                         </div>
@@ -285,7 +247,6 @@
             
             <div v-if="viewMode === 'tickets'" class="p-4 pb-24 h-full flex flex-col">
                 <div class="mb-4 bg-gradient-to-r from-teal-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg"><h2 class="text-xl font-bold flex items-center gap-2"><i class="ph-bold ph-ticket"></i> 我的票券夾</h2></div>
-                <!-- [v2.52 Fix] 日期輸入框改為動態切換，解決 placeholder 顯示問題 -->
                 <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border border-slate-100">
                     <div class="flex gap-2 mb-2">
                         <input v-model="newTicket.date" type="text" placeholder="選擇日期" class="bg-slate-50 border-none rounded-lg text-sm px-3 py-2 w-1/3 text-slate-600" onfocus="(this.type='date')" onblur="(this.value ? this.type='date' : this.type='text')">
@@ -303,42 +264,10 @@
                 <div class="space-y-3"><div v-for="(exp, idx) in expenses" :key="idx" class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 text-xs font-bold">{{ exp.payer.charAt(0) }}</div><div class="font-bold text-slate-700 text-sm">{{ exp.item }}</div></div><div class="flex items-center gap-3"><span class="font-mono font-bold text-slate-700">{{ currencySymbol }}{{ exp.amount.toLocaleString() }}</span><button @click="removeExpense(idx)" class="text-slate-300 hover:text-red-400"><i class="ph-fill ph-x-circle"></i></button></div></div></div>
             </div>
 
-            <!-- [v2.5] 翻譯功能介面復刻 V1 -->
             <div v-if="viewMode === 'translate'" class="p-6 h-full flex flex-col justify-center items-center pb-32">
-                <div class="text-center mb-8">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Google 翻譯捷徑</h2>
-                    <p class="text-sm text-slate-400">請選擇您需要的翻譯模式</p>
-                </div>
-                <div class="w-full mb-4">
-                    <a href="https://translate.google.com/?op=images" target="_blank" class="block w-full">
-                        <button class="w-full bg-gradient-to-br from-orange-400 to-red-500 text-white rounded-2xl p-6 shadow-lg active:scale-95 transition-transform relative overflow-hidden group">
-                            <div class="relative z-10 flex items-center justify-between">
-                                <div class="text-left"><div class="text-xs opacity-80 mb-1 tracking-wider">菜單 / 看板</div><div class="text-2xl font-bold">照相翻譯 <i class="ph-bold ph-camera text-sm"></i></div></div>
-                                <i class="ph-duotone ph-camera-plus text-3xl opacity-60 group-hover:opacity-100"></i>
-                            </div>
-                        </button>
-                    </a>
-                </div>
-                <div class="w-full mb-4">
-                    <a :href="`https://translate.google.com/?sl=zh-TW&tl=${setup.langCode}&op=translate`" target="_blank" class="block w-full">
-                        <button class="w-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-2xl p-6 shadow-lg active:scale-95 transition-transform relative overflow-hidden group">
-                            <div class="relative z-10 flex items-center justify-between">
-                                <div class="text-left"><div class="text-xs opacity-80 mb-1 tracking-wider">我說中文 (轉{{ setup.langName }})</div><div class="text-2xl font-bold">CH <i class="ph-bold ph-arrow-right text-sm"></i> {{ setup.langCode.toUpperCase() }}</div></div>
-                                <i class="ph-duotone ph-arrow-square-out text-3xl opacity-60 group-hover:opacity-100"></i>
-                            </div>
-                        </button>
-                    </a>
-                </div>
-                <div class="w-full">
-                    <a :href="`https://translate.google.com/?sl=${setup.langCode}&tl=zh-TW&op=translate`" target="_blank" class="block w-full">
-                        <button class="w-full bg-white border-2 border-slate-200 text-slate-700 rounded-2xl p-6 shadow-sm active:scale-95 transition-transform relative overflow-hidden group hover:border-indigo-300">
-                            <div class="relative z-10 flex items-center justify-between">
-                                <div class="text-left"><div class="text-xs text-slate-400 mb-1 tracking-wider">對方說{{ setup.langName }} (轉中文)</div><div class="text-2xl font-bold font-jp">{{ setup.langCode.toUpperCase() }} <i class="ph-bold ph-arrow-right text-sm"></i> CH</div></div>
-                                <i class="ph-duotone ph-arrow-square-out text-3xl text-slate-300 group-hover:text-indigo-500 transition-colors"></i>
-                            </div>
-                        </button>
-                    </a>
-                </div>
+                <div class="w-full mb-4"><a href="https://translate.google.com/?op=images" target="_blank" class="block w-full"><button class="w-full bg-gradient-to-br from-orange-400 to-red-500 text-white rounded-2xl p-6 shadow-lg"><div class="text-2xl font-bold">照相翻譯 <i class="ph-bold ph-camera"></i></div></button></a></div>
+                <div class="w-full mb-4"><a :href="`https://translate.google.com/?sl=zh-TW&tl=${setup.langCode}&op=translate`" target="_blank" class="block w-full"><button class="w-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-2xl p-6 shadow-lg"><div class="text-2xl font-bold">CH <i class="ph-bold ph-arrow-right"></i> {{ setup.langCode.toUpperCase() }}</div></button></a></div>
+                <div class="w-full"><a :href="`https://translate.google.com/?sl=${setup.langCode}&tl=zh-TW&op=translate`" target="_blank" class="block w-full"><button class="w-full bg-white border-2 border-slate-200 text-slate-700 rounded-2xl p-6 shadow-sm group hover:border-indigo-300"><div class="relative z-10 flex items-center justify-between"><div class="text-left"><div class="text-xs text-slate-400 mb-1 tracking-wider">對方說{{ setup.langName }} (轉中文)</div><div class="text-2xl font-bold font-jp">{{ setup.langCode.toUpperCase() }} <i class="ph-bold ph-arrow-right text-sm"></i> CH</div></div><i class="ph-duotone ph-arrow-square-out text-3xl text-slate-300 group-hover:text-indigo-500 transition-colors"></i></div></button></a></div>
             </div>
         </main>
         
@@ -476,8 +405,8 @@
                 const unlockCodeInput = ref('');
                 const dbData = ref(null);
                 const historyTrips = ref([]);
-                const lastSavedState = ref(''); // [v2.5] 寫入鎖
-                let syncTimeout = null; // [v2.5] 狀態清除計時器
+                const lastSavedState = ref('');
+                let syncTimeout = null;
                 
                 // Search & Migration
                 const searchQuery = ref('');
@@ -504,7 +433,8 @@
                 });
                 
                 const isRateLoading = ref(false);
-                const weather = ref({ temp: null, icon: 'ph-sun', daily: [] });
+                // [v2.54 Fix] 補全變數結構
+                const weather = ref({ temp: null, icon: 'ph-sun', code: 0, location: '', daily: [] });
                 const syncStatus = ref('');
                 let isRemoteUpdate = false;
                 const recommendationsMap = reactive({});
@@ -538,16 +468,22 @@
                 });
                 const currencyLabel = computed(() => setup.value.currency || '外幣');
                 const currencySymbol = computed(() => ({ 'JPY':'¥', 'CNY':'¥', 'USD':'$', 'EUR':'€', 'KRW':'₩', 'TWD':'NT$' }[setup.value.currency] || '$'));
+                
                 const weatherDisplay = computed(() => {
-                    if (!currentDay.value.fullDate || !weather.value.daily?.time) {
-                        return { 
-                            temp: (weather.value.temp !== null && weather.value.temp !== undefined) ? weather.value.temp : '--', 
-                            icon: weather.value.icon || 'ph-sun', 
-                            label: '目前', 
-                            isForecast: false 
-                        };
+                    const currentTemp = (weather.value.temp !== null && weather.value.temp !== undefined) ? weather.value.temp : '--';
+                    const fallback = { temp: currentTemp, icon: weather.value.icon || 'ph-sun', label: '目前', isForecast: false };
+
+                    if (!currentDay.value.fullDate || !weather.value.daily?.time) return fallback;
+                    
+                    let idx = weather.value.daily.time.indexOf(currentDay.value.fullDate);
+                    
+                    // [v2.54 Fix] 模糊日期比對 (解決舊行程時區問題)
+                    if (idx === -1) {
+                        // 嘗試只比對 MM-DD
+                        const targetMD = currentDay.value.fullDate.slice(5); // "12-11"
+                        idx = weather.value.daily.time.findIndex(t => t.endsWith(targetMD));
                     }
-                    const idx = weather.value.daily.time.indexOf(currentDay.value.fullDate);
+
                     if (idx !== -1) {
                         return { 
                             temp: `${Math.round(weather.value.daily.temperature_2m_min[idx])}°-${Math.round(weather.value.daily.temperature_2m_max[idx])}°`, 
@@ -556,13 +492,10 @@
                             isForecast: true 
                         };
                     }
-                    return { 
-                        temp: (weather.value.temp !== null && weather.value.temp !== undefined) ? weather.value.temp : '--', 
-                        icon: weather.value.icon || 'ph-sun', 
-                        label: '目前', 
-                        isForecast: false 
-                    };
+                    
+                    return fallback;
                 });
+
                 const syncStatusClass = computed(() => ({ '儲存中...': 'sync-saving', '已同步': 'sync-saved' }[syncStatus.value] || 'sync-error'));
                 const syncStatusIcon = computed(() => ({ '儲存中...': 'ph-spinner animate-spin', '已同步': 'ph-check-circle' }[syncStatus.value] || 'ph-warning'));
                 const isKoreaTrip = computed(() => setup.value.langCode === 'ko' || setup.value.currency === 'KRW');
@@ -605,9 +538,8 @@
                     if (!setup.value.extractionCode) return alert("請設定提取碼");
                     
                     const newDays = [];
-                    // Fix: Parse local date correctly
                     const [y, m, d] = setup.value.startDate.split('-').map(Number);
-                    const start = new Date(y, m - 1, d); // Local time construction
+                    const start = new Date(y, m - 1, d); 
 
                     for(let i=0; i<setup.value.days; i++) {
                         const curr = new Date(start); 
@@ -628,7 +560,7 @@
                             config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode, lastUpdate: new Date()
                         };
                         await setDoc(doc(db, "trips", newId), initialData);
-                        lastSavedState.value = JSON.stringify(initialData); // Init Lock
+                        lastSavedState.value = JSON.stringify(initialData); 
                         addToHistory(newId, setup.value.destination, setup.value.author);
                         window.location.href = `?trip_id=${newId}`;
                     } catch(e) { alert("建立失敗: " + e.message); }
@@ -636,7 +568,6 @@
 
                 const loadTripData = (data) => {
                     isRemoteUpdate = true;
-                    // [v2.5] Update Lock state
                     const { lastUpdate, ...rest } = data;
                     lastSavedState.value = JSON.stringify(rest);
                     
@@ -651,8 +582,16 @@
                     setup.value.extractionCode = data.extractionCode || '';
                     
                     updateParticipants();
-                    fetchWeather(setup.value.destination);
-                    nextTick(() => { isRemoteUpdate = false; syncStatus.value = '已同步'; if(syncTimeout) clearTimeout(syncTimeout); syncTimeout = setTimeout(() => syncStatus.value = '', 2000); initSortable(); });
+                    
+                    // [v2.54 Fix] Ensure setup is ready before fetching
+                    nextTick(() => {
+                        if(setup.value.destination) fetchWeather(setup.value.destination);
+                        isRemoteUpdate = false; 
+                        syncStatus.value = '已同步'; 
+                        if(syncTimeout) clearTimeout(syncTimeout); 
+                        syncTimeout = setTimeout(() => syncStatus.value = '', 2000); 
+                        initSortable(); 
+                    });
                 };
 
                 const unlockTrip = () => {
@@ -727,7 +666,6 @@
                 const openSettings = () => { showDrawer.value = false; showSettingsModal.value = true; };
                 const saveSettings = () => { if(tripId.value && !isRemoteUpdate) { saveToCloud(); showSettingsModal.value = false; alert("設定已儲存"); } };
 
-                // [v2.5] Naver Map Logic - Standard Link
                 const getNaverMapLink = (l) => l ? `https://map.naver.com/p/search/${encodeURIComponent(l)}` : '#';
 
                 // --- Common Helpers ---
@@ -739,7 +677,7 @@
                 const updateDate = (e, day) => { 
                     const v = e.target.value; 
                     if(!v) return; 
-                    day.fullDate = v; // Input value YYYY-MM-DD is correct
+                    day.fullDate = v; 
                     const [y, m, d] = v.split('-').map(Number);
                     const dateObj = new Date(y, m - 1, d);
                     day.date = `${dateObj.getMonth()+1}/${dateObj.getDate()}`;
@@ -799,39 +737,44 @@
                                 if(r?.rates?.TWD) setup.value.rate = r.rates.TWD;
                             }
                         }
+                        // [v2.53 Fix] Trigger weather update on location change
+                        fetchWeather(setup.value.destination);
                     } catch(e){} finally { isRateLoading.value = false; }
                 };
                 const fetchWeather = async (loc) => {
                     try {
                         const d = await (await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(loc)}&limit=1`)).json();
                         if(d?.[0]) {
-                            const w = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${d[0].lat}&longitude=${d[0].lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`)).json();
-                            weather.value.temp=Math.round(w.current_weather.temperature); weather.value.icon=getWeatherIcon(w.current_weather.weathercode); if(w.daily) weather.value.daily=w.daily;
+                            // [v2.54 Fix] Change to forecast_days=14 (safer for Open-Meteo)
+                            const w = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${d[0].lat}&longitude=${d[0].lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=14`)).json();
+                            
+                            if(w.current_weather) {
+                                weather.value.temp=Math.round(w.current_weather.temperature); 
+                                weather.value.icon=getWeatherIcon(w.current_weather.weathercode); 
+                            }
+                            if(w.daily) weather.value.daily=w.daily;
                         }
-                    } catch(e){}
+                    } catch(e) { console.error("Weather fetch failed", e); }
                 };
 
                 const saveToCloud = debounce(async () => {
                     if(!db || !tripId.value || isRemoteUpdate || isLocked.value) return;
                     
-                    // [v2.5] 智慧寫入鎖：比較現在的資料與上一次存擋的資料是否一致
                     const dataToCompare = {
                         days: days.value, expenses: expenses.value, tickets: tickets.value, participantsStr: participantsStr.value,
                         rate: exchangeRate.value, config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode
                     };
                     const currentJson = JSON.stringify(dataToCompare);
                     
-                    // 如果資料內容完全一樣，直接跳過不寫入 (省流量)
                     if (currentJson === lastSavedState.value) return;
 
                     syncStatus.value = '儲存中...';
                     try {
                         const dataToSave = { ...dataToCompare, lastUpdate: new Date() };
                         await updateDoc(doc(db, "trips", tripId.value), dataToSave);
-                        lastSavedState.value = currentJson; // 更新快照
+                        lastSavedState.value = currentJson; 
                         
                         syncStatus.value = '已同步';
-                        // [v2.5] 修正計時器衝突，確保提示會消失
                         if(syncTimeout) clearTimeout(syncTimeout);
                         syncTimeout = setTimeout(() => syncStatus.value = '', 3000);
                     } catch(e) { syncStatus.value = '同步失敗'; console.error(e); }
