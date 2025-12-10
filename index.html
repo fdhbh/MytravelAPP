@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>旅遊計畫 v2.43</title>
+    <title>旅遊計畫</title>
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Tailwind CSS -->
@@ -53,7 +53,7 @@
             height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* [v2.42 Fix] 隱藏原生時間選擇器圖示以節省空間 */
+        /* 隱藏原生時間選擇器圖示 */
         input[type="time"]::-webkit-calendar-picker-indicator {
             display: none;
         }
@@ -135,14 +135,15 @@
                         <button @click="resetToHome" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
                             <i class="ph-bold ph-house"></i> 回首頁 / 建立新行程
                         </button>
-                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.43</div>
+                        <!-- v2.5 更新版本號位置 -->
+                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.5</div>
                     </div>
                 </div>
             </transition>
         </div>
 
         <!-- Header -->
-        <header class="bg-teal-600 text-white shrink-0 z-20 shadow-md relative">
+        <header class="bg-teal-600 text-white shrink-0 z-20 shadow-md relative transition-all duration-300">
             <div class="p-4 flex justify-between items-center">
                 <div class="flex items-center gap-3 min-w-0 flex-1 mr-2">
                     <button @click="showDrawer = true" class="text-white hover:bg-teal-700 p-1.5 -ml-1.5 rounded-lg transition shrink-0">
@@ -162,7 +163,8 @@
                 </div>
             </div>
             
-            <div class="flex overflow-x-auto hide-scroll px-2 pb-3 space-x-3 snap-x">
+            <!-- [v2.5 UI修正] 僅在 Plan 模式顯示日期列，節省空間 -->
+            <div v-if="viewMode === 'plan'" class="flex overflow-x-auto hide-scroll px-2 pb-3 space-x-3 snap-x">
                 <div v-for="(day, index) in days" :key="index" @click="currentDayIdx = index; viewMode = 'plan'" class="snap-center shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl cursor-pointer transition-all border-2" :class="currentDayIdx === index ? 'bg-white text-teal-600 border-white shadow-lg scale-105' : 'bg-teal-500/50 text-teal-100 border-transparent hover:bg-teal-500'">
                     <span class="text-[10px] font-bold opacity-90 mb-0.5">{{ day.shortDate }} ({{ getDayName(day.fullDate) }})</span>
                     <span class="text-lg font-bold leading-none">D{{ index + 1 }}</span>
@@ -191,7 +193,7 @@
                         </div>
                     </div>
 
-                    <!-- 航班卡片 (v2.43 修正: 增加 showPicker 點擊事件) -->
+                    <!-- 航班卡片 -->
                     <div class="mb-6">
                         <div v-if="currentDay.flight" class="relative bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl text-white shadow-lg overflow-hidden">
                             <div class="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-50 rounded-full z-10"></div>
@@ -201,7 +203,6 @@
                                 <div class="flex justify-between items-center mb-1 pt-2">
                                     <!-- 出發 -->
                                     <div class="flex flex-col items-center w-1/3">
-                                        <!-- [Fix v2.43] 增加 @click="showPicker" -->
                                         <input v-model="currentDay.flight.startTime" type="time" class="text-xl font-bold bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0" @click="$event.target.showPicker ? $event.target.showPicker() : null">
                                         <div class="text-[9px] opacity-60 mt-1">起飛</div>
                                         <input v-model="currentDay.flight.startAirport" class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="TPE">
@@ -219,7 +220,6 @@
                                     </div>
                                     <!-- 抵達 -->
                                     <div class="flex flex-col items-center w-1/3">
-                                        <!-- [Fix v2.43] 增加 @click="showPicker" -->
                                         <input v-model="currentDay.flight.endTime" type="time" class="text-xl font-bold bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0" @click="$event.target.showPicker ? $event.target.showPicker() : null">
                                         <div class="relative w-full mt-0.5">
                                             <select v-model="currentDay.flight.arrivalOffset" class="appearance-none bg-black/20 text-white text-[9px] rounded border-none w-full py-0.5 px-1 text-center focus:ring-0 cursor-pointer hover:bg-black/30">
@@ -244,12 +244,11 @@
                                     <div class="flex flex-col gap-2">
                                         <div class="flex items-start gap-3">
                                             <div class="drag-handle cursor-grab text-slate-300 hover:text-teal-500 self-center -ml-1 py-3 px-1 touch-none"><i class="ph-bold ph-dots-six-vertical text-2xl"></i></div>
-                                            <!-- 行程時間輸入區 (Fix: 增加點擊事件) -->
+                                            <!-- 行程時間 -->
                                             <div class="flex flex-col items-center w-20 shrink-0 gap-2">
                                                 <div class="relative flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-1 w-full h-16 cursor-pointer hover:bg-teal-50 hover:border-teal-200 transition group/time">
                                                     <span class="text-[10px] font-medium text-slate-400 group-hover/time:text-teal-400">{{ getTimePeriod(item.time) }}</span>
                                                     <span class="text-xl font-bold text-slate-700 group-hover/time:text-teal-600 leading-none font-mono tracking-tight">{{ item.time || '--:--' }}</span>
-                                                    <!-- [Fix v2.43] 關鍵修正: 增加 @click 來觸發 showPicker()，解決隱藏圖示後無法點擊的問題 -->
                                                     <input v-model="item.time" type="time" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" @click="$event.target.showPicker ? $event.target.showPicker() : null">
                                                 </div>
                                                 <select v-model="item.type" class="text-[10px] bg-white border border-slate-200 rounded-md py-1 px-1 w-full text-center"><option value="spot">📍 景點</option><option value="food">🍴 美食</option><option value="shop">🛍️ 購物</option><option value="transport">🚇 交通</option><option value="flight">✈️ 航班</option><option value="hotel">🏨 住宿</option></select>
@@ -259,7 +258,16 @@
                                                 <div class="flex items-center gap-1 mt-1"><i class="ph-fill ph-map-pin text-teal-400 text-xs"></i><input v-model="item.location" class="flex-1 text-xs text-slate-500 bg-transparent border-none p-0 focus:ring-0 truncate" placeholder="輸入地點"></div>
                                                 <div class="mt-2 relative"><div class="flex items-start gap-2 bg-slate-50 rounded-lg p-2 border border-slate-100 group-focus-within:border-teal-200 group-focus-within:bg-white transition-colors"><i class="ph-bold ph-notebook text-slate-400 text-sm mt-0.5 shrink-0"></i><textarea v-model="item.note" class="auto-resize-textarea w-full text-xs text-slate-600 bg-transparent border-none p-0 focus:ring-0 leading-relaxed resize-none placeholder-slate-400 min-h-[20px]" placeholder="備註..." rows="1" @input="adjustHeight($event.target)" @focus="adjustHeight($event.target)"></textarea></div></div>
                                             </div>
-                                            <div class="flex flex-col gap-2 items-center"><a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1 rounded"><i class="ph-bold ph-navigation-arrow"></i></a><button @click="removeItem(idx)" class="text-red-300 hover:text-red-500 p-1 rounded"><i class="ph-bold ph-trash"></i></button></div>
+                                            <div class="flex flex-col gap-2 items-center">
+                                                <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-500 hover:bg-teal-50 p-1 rounded" title="Google Map"><i class="ph-bold ph-navigation-arrow"></i></a>
+                                                
+                                                <!-- [v2.5] 韓國 Naver Map 按鈕 -->
+                                                <button v-if="isKoreaTrip" @click="openNaverMap(item.location)" class="text-green-500 hover:bg-green-50 p-1 rounded flex flex-col items-center justify-center border border-green-100 shadow-sm w-6 h-6" title="Naver Map (App)">
+                                                    <span class="font-black text-[10px] leading-none">N</span>
+                                                </button>
+
+                                                <button @click="removeItem(idx)" class="text-red-300 hover:text-red-500 p-1 rounded"><i class="ph-bold ph-trash"></i></button>
+                                            </div>
                                         </div>
                                         <div class="mt-2 pt-2 border-t border-slate-100 flex items-center gap-2"><div class="relative flex-1"><div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none"><i class="ph-bold ph-qr-code text-slate-400"></i></div><input v-model="item.qrcode" class="block w-full pl-8 pr-2 py-1 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-1 focus:ring-teal-500" placeholder="票券 QR 連結..."></div><a v-if="item.qrcode" :href="item.qrcode" target="_blank" class="shrink-0 bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-slate-700 flex items-center gap-1 shadow-sm"><i class="ph-bold ph-link"></i> 開啟</a></div>
                                         <div v-if="item.type === 'food'" class="p-2 bg-orange-50 rounded-lg border border-orange-100/50 mt-1">
@@ -289,9 +297,42 @@
                 <div class="space-y-3"><div v-for="(exp, idx) in expenses" :key="idx" class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 text-xs font-bold">{{ exp.payer.charAt(0) }}</div><div class="font-bold text-slate-700 text-sm">{{ exp.item }}</div></div><div class="flex items-center gap-3"><span class="font-mono font-bold text-slate-700">{{ currencySymbol }}{{ exp.amount.toLocaleString() }}</span><button @click="removeExpense(idx)" class="text-slate-300 hover:text-red-400"><i class="ph-fill ph-x-circle"></i></button></div></div></div>
             </div>
 
+            <!-- [v2.5] 翻譯功能介面復刻 V1 -->
             <div v-if="viewMode === 'translate'" class="p-6 h-full flex flex-col justify-center items-center pb-32">
-                <div class="w-full mb-4"><a href="https://translate.google.com/?op=images" target="_blank" class="block w-full"><button class="w-full bg-gradient-to-br from-orange-400 to-red-500 text-white rounded-2xl p-6 shadow-lg"><div class="text-2xl font-bold">照相翻譯 <i class="ph-bold ph-camera"></i></div></button></a></div>
-                <div class="w-full mb-4"><a :href="`https://translate.google.com/?sl=zh-TW&tl=${setup.langCode}&op=translate`" target="_blank" class="block w-full"><button class="w-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-2xl p-6 shadow-lg"><div class="text-2xl font-bold">CH <i class="ph-bold ph-arrow-right"></i> {{ setup.langCode.toUpperCase() }}</div></button></a></div>
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Google 翻譯捷徑</h2>
+                    <p class="text-sm text-slate-400">請選擇您需要的翻譯模式</p>
+                </div>
+                <div class="w-full mb-4">
+                    <a href="https://translate.google.com/?op=images" target="_blank" class="block w-full">
+                        <button class="w-full bg-gradient-to-br from-orange-400 to-red-500 text-white rounded-2xl p-6 shadow-lg active:scale-95 transition-transform relative overflow-hidden group">
+                            <div class="relative z-10 flex items-center justify-between">
+                                <div class="text-left"><div class="text-xs opacity-80 mb-1 tracking-wider">菜單 / 看板</div><div class="text-2xl font-bold">照相翻譯 <i class="ph-bold ph-camera text-sm"></i></div></div>
+                                <i class="ph-duotone ph-camera-plus text-3xl opacity-60 group-hover:opacity-100"></i>
+                            </div>
+                        </button>
+                    </a>
+                </div>
+                <div class="w-full mb-4">
+                    <a :href="`https://translate.google.com/?sl=zh-TW&tl=${setup.langCode}&op=translate`" target="_blank" class="block w-full">
+                        <button class="w-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-2xl p-6 shadow-lg active:scale-95 transition-transform relative overflow-hidden group">
+                            <div class="relative z-10 flex items-center justify-between">
+                                <div class="text-left"><div class="text-xs opacity-80 mb-1 tracking-wider">我說中文 (轉{{ setup.langName }})</div><div class="text-2xl font-bold">CH <i class="ph-bold ph-arrow-right text-sm"></i> {{ setup.langCode.toUpperCase() }}</div></div>
+                                <i class="ph-duotone ph-arrow-square-out text-3xl opacity-60 group-hover:opacity-100"></i>
+                            </div>
+                        </button>
+                    </a>
+                </div>
+                <div class="w-full">
+                    <a :href="`https://translate.google.com/?sl=${setup.langCode}&tl=zh-TW&op=translate`" target="_blank" class="block w-full">
+                        <button class="w-full bg-white border-2 border-slate-200 text-slate-700 rounded-2xl p-6 shadow-sm active:scale-95 transition-transform relative overflow-hidden group hover:border-indigo-300">
+                            <div class="relative z-10 flex items-center justify-between">
+                                <div class="text-left"><div class="text-xs text-slate-400 mb-1 tracking-wider">對方說{{ setup.langName }} (轉中文)</div><div class="text-2xl font-bold font-jp">{{ setup.langCode.toUpperCase() }} <i class="ph-bold ph-arrow-right text-sm"></i> CH</div></div>
+                                <i class="ph-duotone ph-arrow-square-out text-3xl text-slate-300 group-hover:text-indigo-500 transition-colors"></i>
+                            </div>
+                        </button>
+                    </a>
+                </div>
             </div>
         </main>
         
@@ -355,7 +396,7 @@
             </div>
         </div>
 
-        <!-- Settings Modal (v2.41 Updated) -->
+        <!-- Settings Modal -->
         <div v-if="showSettingsModal" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6 animate-fade-in" @click.self="showSettingsModal = false">
             <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto hide-scroll">
                 <button @click="showSettingsModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="ph-bold ph-x text-xl"></i></button>
@@ -364,7 +405,6 @@
                     <div><label class="block text-xs font-bold text-slate-500 mb-1 ml-1">作者暱稱</label><input v-model="setup.author" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm"></div>
                     <div><label class="block text-xs font-bold text-slate-500 mb-1 ml-1 flex justify-between"><span>提取碼 (密碼)</span><span v-if="!setup.extractionCode" class="text-red-500 animate-pulse">⚠️ 未設定保護</span></label><input v-model="setup.extractionCode" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-mono text-teal-600 font-bold"><p class="text-[10px] text-slate-400 mt-1 ml-1">修改後請務必記住新代碼。</p></div>
                     
-                    <!-- ID Migration Section (New in v2.41) -->
                     <div class="border-t border-slate-100 pt-4 mt-2">
                         <label class="block text-xs font-bold text-indigo-500 mb-1 ml-1 flex items-center gap-1"><i class="ph-bold ph-swap"></i> 變更行程 ID (搬家)</label>
                         <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
@@ -430,8 +470,10 @@
                 const unlockCodeInput = ref('');
                 const dbData = ref(null);
                 const historyTrips = ref([]);
+                const lastSavedState = ref(''); // [v2.5] 寫入鎖
+                let syncTimeout = null; // [v2.5] 狀態清除計時器
                 
-                // Search & Migration (v2.41)
+                // Search & Migration
                 const searchQuery = ref('');
                 const searchResults = ref([]);
                 const isSearching = ref(false);
@@ -539,10 +581,12 @@
                     }
                     try {
                         const newId = setup.value.customId.trim();
-                        await setDoc(doc(db, "trips", newId), {
+                        const initialData = {
                             days: newDays, expenses: [], tickets: [], participantsStr: '我, 旅伴A', rate: setup.value.rate,
                             config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode, lastUpdate: new Date()
-                        });
+                        };
+                        await setDoc(doc(db, "trips", newId), initialData);
+                        lastSavedState.value = JSON.stringify(initialData); // Init Lock
                         addToHistory(newId, setup.value.destination, setup.value.author);
                         window.location.href = `?trip_id=${newId}`;
                     } catch(e) { alert("建立失敗: " + e.message); }
@@ -550,6 +594,9 @@
 
                 const loadTripData = (data) => {
                     isRemoteUpdate = true;
+                    // [v2.5] Update Lock state
+                    lastSavedState.value = JSON.stringify(data);
+                    
                     days.value = data.days || [];
                     days.value.forEach(d => d.items?.forEach(i => { if(!i.id) i.id = Math.random(); if(i.qrcode===undefined) i.qrcode=''; }));
                     expenses.value = data.expenses || [];
@@ -562,7 +609,7 @@
                     
                     updateParticipants();
                     fetchWeather(setup.value.destination);
-                    nextTick(() => { isRemoteUpdate = false; syncStatus.value = '已同步'; setTimeout(() => syncStatus.value = '', 2000); initSortable(); });
+                    nextTick(() => { isRemoteUpdate = false; syncStatus.value = '已同步'; if(syncTimeout) clearTimeout(syncTimeout); syncTimeout = setTimeout(() => syncStatus.value = '', 2000); initSortable(); });
                 };
 
                 const unlockTrip = () => {
@@ -591,73 +638,68 @@
                     startListening(id);
                 };
 
-                // v2.41 Search Logic
                 const searchTrip = async () => {
                     if(!searchQuery.value) return;
                     isSearching.value = true; searchResults.value = []; searchMsg.value = '';
                     const q = searchQuery.value.trim();
                     try {
-                        // 1. Try ID direct match
                         const idSnap = await getDoc(doc(db, "trips", q));
                         if(idSnap.exists()) {
                             const d = idSnap.data();
                             searchResults.value.push({ id: idSnap.id, destination: d.config?.destination || '行程', author: d.author || '未知' });
                         }
-                        // 2. Try Author exact match
                         const authorQ = query(collection(db, "trips"), where("author", "==", q));
                         const authorSnaps = await getDocs(authorQ);
                         authorSnaps.forEach(doc => {
-                            if(doc.id !== q) { // Avoid duplicate
+                            if(doc.id !== q) {
                                 const d = doc.data();
                                 searchResults.value.push({ id: doc.id, destination: d.config?.destination || '行程', author: d.author });
                             }
                         });
-                        
                         if(searchResults.value.length === 0) searchMsg.value = '找不到相符的 ID 或作者';
                     } catch(e) { console.error(e); searchMsg.value = '搜尋發生錯誤 (請檢查網路)'; }
                     finally { isSearching.value = false; }
                 };
 
-                // v2.41 Migrate Logic
                 const migrateTripId = async () => {
                     const newId = newMigrateId.value.trim();
                     if(!newId || newId.length < 3) return alert("新 ID 需至少 3 個字元");
                     if(!confirm(`確定要將 ID 變更為 "${newId}" 嗎？\n舊連結將立即失效！`)) return;
-                    
                     isMigrating.value = true;
                     try {
-                        // Check if new ID exists
                         const check = await getDoc(doc(db, "trips", newId));
                         if(check.exists()) throw new Error("此 ID 已被使用，請換一個");
-
-                        // Copy Data
                         const currentData = {
                             days: days.value, expenses: expenses.value, tickets: tickets.value, participantsStr: participantsStr.value,
                             rate: exchangeRate.value, config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode, lastUpdate: new Date()
                         };
-                        
-                        // Write New -> Delete Old
                         await setDoc(doc(db, "trips", newId), currentData);
                         await deleteDoc(doc(db, "trips", tripId.value));
-                        
                         alert("變更成功！網頁將重新載入。");
                         window.location.href = `?trip_id=${newId}`;
                     } catch(e) { alert("變更失敗: " + e.message); isMigrating.value = false; }
                 };
 
                 const resetToHome = () => { window.history.pushState({}, '', window.location.pathname); window.location.reload(); };
-                
                 const openSettings = () => { showDrawer.value = false; showSettingsModal.value = true; };
+                const saveSettings = () => { if(tripId.value && !isRemoteUpdate) { saveToCloud(); showSettingsModal.value = false; alert("設定已儲存"); } };
 
-                const saveSettings = () => {
-                    if(tripId.value && !isRemoteUpdate) {
-                        saveToCloud();
-                        showSettingsModal.value = false;
-                        alert("設定已儲存");
-                    }
+                // [v2.5] Naver Map Logic
+                const openNaverMap = (loc) => {
+                    if(!loc) return;
+                    const q = encodeURIComponent(loc);
+                    const appUrl = `nmap://search?query=${q}&appname=mytravelapp`; // 呼叫 App
+                    const webUrl = `https://map.naver.com/p/search/${q}`; // 網頁版
+                    
+                    // 嘗試開啟 App，若失敗(沒安裝)則在 1.5秒後跳轉網頁
+                    const start = Date.now();
+                    setTimeout(() => {
+                        if (Date.now() - start < 2000) { window.location.href = webUrl; }
+                    }, 1500);
+                    window.location.href = appUrl;
                 };
 
-                // --- Common Helpers (Unchanged) ---
+                // --- Common Helpers ---
                 const getWeatherIcon = (c) => { if (c===0) return 'ph-sun'; if (c<4) return 'ph-cloud-sun'; if (c<50) return 'ph-cloud-fog'; if (c<70) return 'ph-cloud-rain'; return 'ph-cloud'; };
                 const getTimePeriod = (t) => { if(!t) return '時間'; const h=parseInt(t.split(':')[0]); return h<5?'凌晨':h<11?'上午':h<14?'中午':h<18?'下午':'晚上'; };
                 const toggleFlightCard = () => { if (currentDay.value.flight) { if(confirm('移除航班?')) currentDay.value.flight = null; } else { currentDay.value.flight = { type: 'arrival', startTime: '10:00', startAirport: 'TPE', number: 'FLIGHT', endTime: '14:00', endAirport: 'DEST', arrivalOffset: 0 }; } };
@@ -666,7 +708,6 @@
                 const updateDate = (e, day) => { const v=e.target.value; if(!v)return; day.fullDate=v; const d=new Date(v); const m=d.getMonth()+1, dd=d.getDate(); day.date=`${m<10?'0'+m:m}/${dd<10?'0'+dd:dd}`; day.shortDate=`${m}/${dd}`; };
                 const getDayName = (str) => str ? ['日','一','二','三','四','五','六'][new Date(str).getDay()] : '';
                 const adjustHeight = (el) => { if(el){ el.style.height='auto'; el.style.height=(el.scrollHeight)+'px'; } };
-                
                 const initSortable = () => {
                     if (sortableInstance) sortableInstance.destroy();
                     if (!itineraryList.value) return;
@@ -688,14 +729,7 @@
                 const addTicket = () => { if(newTicket.value.name) { tickets.value.push({id:Date.now(), ...newTicket.value}); newTicket.value={date:'',name:'',link:''}; }};
                 const removeTicket = (id) => { const idx=tickets.value.findIndex(t=>t.id===id); if(idx!==-1 && confirm('刪除?')) tickets.value.splice(idx,1); };
                 const copyShareLink = () => { navigator.clipboard.writeText(window.location.href).then(()=>alert('連結已複製')); };
-                
-                // Flight Search (v2.42 New)
-                const searchFlight = (flightNo) => {
-                    if(!flightNo) return;
-                    window.open(`https://www.google.com/search?q=航班+${encodeURIComponent(flightNo)}`, '_blank');
-                };
-
-                // LBS & Detect
+                const searchFlight = (flightNo) => { if(!flightNo) return; window.open(`https://www.google.com/search?q=航班+${encodeURIComponent(flightNo)}`, '_blank'); };
                 const searchNearby = async (item, idx) => {
                     if(!item.location) return;
                     searchTargetIndex.value = `${currentDayIdx.value}-${idx}`; isSearchingRecs.value = true;
@@ -736,13 +770,26 @@
 
                 const saveToCloud = debounce(async () => {
                     if(!db || !tripId.value || isRemoteUpdate || isLocked.value) return;
+                    
+                    // [v2.5] 智慧寫入鎖：比較現在的資料與上一次存擋的資料是否一致
+                    const dataToSave = {
+                        days: days.value, expenses: expenses.value, tickets: tickets.value, participantsStr: participantsStr.value,
+                        rate: exchangeRate.value, config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode, lastUpdate: new Date()
+                    };
+                    const currentJson = JSON.stringify(dataToSave);
+                    
+                    // 如果資料內容完全一樣，直接跳過不寫入 (省流量)
+                    if (currentJson === lastSavedState.value) return;
+
                     syncStatus.value = '儲存中...';
                     try {
-                        await updateDoc(doc(db, "trips", tripId.value), {
-                            days: days.value, expenses: expenses.value, tickets: tickets.value, participantsStr: participantsStr.value,
-                            rate: exchangeRate.value, config: setup.value, author: setup.value.author, extractionCode: setup.value.extractionCode, lastUpdate: new Date()
-                        });
-                        setTimeout(() => syncStatus.value = '已同步', 500); setTimeout(() => syncStatus.value = '', 3000);
+                        await updateDoc(doc(db, "trips", tripId.value), dataToSave);
+                        lastSavedState.value = currentJson; // 更新快照
+                        
+                        syncStatus.value = '已同步';
+                        // [v2.5] 修正計時器衝突，確保提示會消失
+                        if(syncTimeout) clearTimeout(syncTimeout);
+                        syncTimeout = setTimeout(() => syncStatus.value = '', 3000);
                     } catch(e) { syncStatus.value = '同步失敗'; console.error(e); }
                 }, 1000);
 
@@ -768,12 +815,11 @@
                     isRateLoading, updateDate, showSetupModal, setup, initTrip, detectRate, toggleFlightCard, getDotColor,
                     searchNearby, recommendationsMap, isSearchingRecs, applyRecommendation, searchTargetIndex,
                     copyShareLink, syncStatus, syncStatusClass, syncStatusIcon, getNaverMapLink, getDayName, adjustHeight, itineraryList,
-                    // V2.41 New & Update
                     homeTab, checkIdAvailability, idStatus, searchQuery, searchResults, isSearching, searchMsg, searchTrip,
                     isLocked, unlockTrip, unlockCodeInput, showDrawer, historyTrips, loadFromHistory, clearHistory, resetToHome,
                     showSettingsModal, openSettings, saveSettings, tripId,
                     newMigrateId, isMigrating, migrateTripId,
-                    searchFlight // v2.42 New
+                    searchFlight, openNaverMap, isKoreaTrip
                 };
             }
         }).mount('#app')
