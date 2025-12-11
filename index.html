@@ -107,7 +107,7 @@
                     </div>
                     <div class="p-4 border-t border-slate-200 bg-white">
                         <button @click="resetToHome" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2"><i class="ph-bold ph-house"></i> 回首頁 / 建立新行程</button>
-                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.61</div>
+                        <div class="text-[9px] text-center text-slate-300 mt-2">v2.62</div>
                     </div>
                 </div>
             </transition>
@@ -427,7 +427,6 @@
                 const currencySymbol = computed(() => ({ 'JPY':'¥', 'CNY':'¥', 'USD':'$', 'EUR':'€', 'KRW':'₩', 'TWD':'NT$' }[setup.value.currency] || '$'));
                 
                 const weatherDisplay = computed(() => {
-                    // [v2.56 Fix] 0 degree check
                     const hasCurrentTemp = weather.value.temp !== null && weather.value.temp !== undefined;
                     const currentTempDisplay = hasCurrentTemp ? weather.value.temp : '--';
                     const fallback = { temp: currentTempDisplay, icon: weather.value.icon || 'ph-sun', label: '目前', isForecast: false };
